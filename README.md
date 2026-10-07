@@ -25,28 +25,46 @@ npm run dev
 
 ## App (Android, iOS, Windows, macOS)
 
-Needs the latest stable Flutter. Run `./setup.sh` (macOS, Linux or Git Bash on Windows), or by hand:
+Needs the latest stable Flutter and Node 22+. Run `./setup.sh` (macOS, Linux or Git Bash on Windows). It
+upgrades Flutter, generates the platform folders, installs the newest version of every package, applies the
+one-time platform settings (`tools/patch-platforms.mjs`), then runs `flutter analyze` and `flutter test`.
+By hand:
 
 ```bash
 flutter upgrade
 flutter create --org com.vyro --project-name vyro_music --platforms android,ios,windows,macos app
 rm -rf app/lib app/test && cp -R app_src/lib app/lib && cp -R app_src/test app/test
 cd app
-flutter pub add just_audio just_audio_media_kit media_kit_libs_windows_audio
+flutter pub add just_audio just_audio_media_kit media_kit_libs_windows_audio audio_service audio_session \
+  file_picker path_provider permission_handler audio_metadata_reader
 flutter pub add --dev fake_async
 flutter pub upgrade --major-versions
+node ../tools/patch-platforms.mjs .
 flutter analyze && flutter test
 flutter run -d <android|ios|windows|macos>
 ```
 
-### One-time platform steps
+### What the platform script changes
 
-- **Android**: add `<uses-permission android:name="android.permission.INTERNET"/>` to
-  `app/android/app/src/main/AndroidManifest.xml` (release builds need it for streaming).
-- **macOS**: add `<key>com.apple.security.network.client</key><true/>` to both
-  `app/macos/Runner/DebugProfile.entitlements` and `app/macos/Runner/Release.entitlements`.
-- **Windows**: install Visual Studio with the "Desktop development with C++" workload and turn on
-  Developer Mode (Flutter plugins need symlinks).
+- **Android**: internet, wake lock, foreground-service and notification permissions; permission to read music
+  (`READ_MEDIA_AUDIO`, and storage up to Android 12); the audio activity, service and media-button receiver.
+- **iOS**: the audio background mode, so music keeps playing when the app is not on screen.
+- **macOS**: network and picked-file entitlements, and the **App Sandbox is turned off** so the app can read your
+  real Music folder. Fine for development and for apps shipped outside the Mac App Store; a store release needs the
+  sandbox back on, with saved folder permissions.
+- **Windows**: nothing to patch. Install Visual Studio with "Desktop development with C++" and turn on Developer Mode.
+
+### Background playback
+
+Android, iOS and macOS show the song in the notification or Now Playing area and respond to the lock screen
+(not macOS), headset buttons and Bluetooth. Windows media keys and the Windows media overlay are a separate step.
+
+### Local music library
+
+Scans the usual music folders (Music and Download on Android, `Music` on Windows and macOS), reads tags in a
+background thread, and only re-reads files that changed. Hidden folders and clips under 30 seconds are skipped.
+You can also add a folder or pick songs. iOS cannot scan the device, so songs come in through "Add songs".
+Songs are grouped into Songs, Albums, Artists and Liked, with search; tapping a song plays it with the mix engine.
 
 ## Statistics
 

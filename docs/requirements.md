@@ -1,8 +1,8 @@
 # Vyro Music: Product Requirements
 
-**Version 0.3 · 6 October 2026 · Status: for review**
+**Version 0.4 · 6 October 2026 · Status: for review**
 
-*Changes in v0.3: statistics redesigned from the best of Spotify, Apple Music, YouTube Studio, Audiomack, stats.fm and Last.fm (STA-16 to STA-20, new module PRF for listener profiles). v0.2: Normal and Mixing playback modes (MIX-21 to MIX-23), one codebase for desktop (DEV-12, DEV-13).*
+*Changes in v0.4: background playback and local library built (new LIB-16, LIB-17, PLY-20, DEV-14, DEV-15). v0.3: statistics redesigned from the best of Spotify, Apple Music, YouTube Studio, Audiomack, stats.fm and Last.fm (STA-16 to STA-20, new module PRF for listener profiles). v0.2: Normal and Mixing playback modes (MIX-21 to MIX-23), one codebase for desktop (DEV-12, DEV-13).*
 
 ## 1. Vision
 
@@ -121,6 +121,8 @@ Each requirement has an ID, a phase tag and a checkbox.
 - [ ] **LIB-13** [2] Import playlists from other services (file import or connected services where allowed).
 - [ ] **LIB-14** [3] Cloud sync of library metadata and playlists (not the audio files).
 - [ ] **LIB-15** [3] Optional private cloud locker: stream your own uploaded files on other devices.
+- [ ] **LIB-16** [M] Add songs by picking them; on phones the picked files are copied into the app so they stay available.
+- [ ] **LIB-17** [M] Scanning runs in the background with live progress and never freezes the screen.
 
 ### SRC: Streaming sources and YouTube
 *Inspired by Lark Player, Audiomack*
@@ -160,6 +162,7 @@ Each requirement has an ID, a phase tag and a checkbox.
 - [ ] **PLY-17** [3] Cross-device handoff and remote control.
 - [ ] **PLY-18** [3] Car mode with a simplified, large-button UI.
 - [ ] **PLY-19** [3] Spatial audio mode for headphones, where licensing and technology allow.
+- [ ] **PLY-20** [M] Background playback with notification, lock-screen, headset and Bluetooth controls on Android, iOS and macOS.
 
 ### MIX: Mixing and transitions
 *Inspired by Apple Music Automix, DJ software*
@@ -412,6 +415,8 @@ Each requirement has an ID, a phase tag and a checkbox.
 - [ ] **DEV-11** [4] Smart TV app.
 - [ ] **DEV-12** [M] One Flutter codebase for Android, iOS, Windows and macOS (Linux later).
 - [ ] **DEV-13** [2] Desktop conventions: resizable window, keyboard shortcuts and media keys, menu-bar or system-tray controls, drag-and-drop of audio files.
+- [ ] **DEV-14** [2] Windows media keys and the Windows media overlay (the background-audio plugin does not cover Windows).
+- [ ] **DEV-15** [3] macOS App Store release: App Sandbox back on, with saved folder permissions for the music library.
 
 ### SAF: Trust, safety and legal
 

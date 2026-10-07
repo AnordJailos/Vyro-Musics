@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../audio/playback_controller.dart';
 import '../brand/vyro_mark.dart';
+import '../library/library_controller.dart';
+import '../library/library_page.dart';
 import '../stats/artist_stats_page.dart';
 import '../stats/listener_profile_page.dart';
 import '../stats/models.dart';
@@ -32,11 +34,12 @@ const _artistTabs = [
 /// ART-02: one account, two modes. The switch in the top bar flips between
 /// the listener tabs and the artist tabs.
 class AppShell extends StatefulWidget {
-  const AppShell({super.key, required this.theme, required this.playback, required this.stats});
+  const AppShell({super.key, required this.theme, required this.playback, required this.stats, required this.library});
 
   final ThemeController theme;
   final PlaybackController playback;
   final StatsRepository stats;
+  final LibraryController library;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -50,6 +53,8 @@ class _AppShellState extends State<AppShell> {
     switch (tab.label) {
       case 'Home':
         return HomePage(controller: widget.playback);
+      case 'Library':
+        return LibraryPage(library: widget.library, playback: widget.playback);
       case 'Profile':
         return ListenerProfilePage(repository: widget.stats);
       case 'Stats':

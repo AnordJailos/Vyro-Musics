@@ -12,16 +12,9 @@ cp -R app_src/lib app/lib
 cp -R app_src/test app/test
 
 cd app
-# Without version numbers, pub picks the newest release of each package.
-flutter pub add just_audio just_audio_media_kit media_kit_libs_windows_audio \
-  audio_service audio_session file_picker path_provider permission_handler audio_metadata_reader
+flutter pub add just_audio just_audio_media_kit media_kit_libs_windows_audio
 flutter pub add --dev fake_async
 flutter pub upgrade --major-versions
-
-# One-time platform settings: Android permissions and audio service, iOS background audio,
-# macOS entitlements. Needs Node (the same Node the server uses).
-node ../tools/patch-platforms.mjs .
-
 flutter analyze
 flutter test
 echo "Done. Run it with: cd app && flutter run -d <android|ios|windows|macos>"

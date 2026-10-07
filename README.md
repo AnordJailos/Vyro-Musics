@@ -44,6 +44,12 @@ flutter analyze && flutter test
 flutter run -d <android|ios|windows|macos>
 ```
 
+### Applying updates
+
+Updates arrive as git patches. In your repo: `git am path/to/0001-*.patch` (then the next one). If the update
+adds packages, run `./setup.sh` again (it keeps the existing `app/` folder and is safe to repeat); if it only
+changes code, `./sync.sh` is enough.
+
 ### What the platform script changes
 
 - **Android**: internet, wake lock, foreground-service and notification permissions; permission to read music

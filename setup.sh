@@ -5,7 +5,10 @@ cd "$(dirname "$0")"
 
 flutter upgrade
 flutter config --enable-windows-desktop --enable-macos-desktop
-flutter create --org com.vyro --project-name vyro_music --platforms android,ios,windows,macos app
+# Only generate the platform folders the first time; later runs keep them as they are.
+if [ ! -f app/pubspec.yaml ]; then
+  flutter create --org com.vyro --project-name vyro_music --platforms android,ios,windows,macos app
+fi
 
 rm -rf app/lib app/test
 cp -R app_src/lib app/lib

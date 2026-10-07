@@ -2,36 +2,36 @@
   "meta": {
     "updated": "7 October 2026",
     "next": [
-      "Connect the login screens to the server. This turns about 25 built and partial items (accounts, artist upgrade, both statistics pages, play history) into real, working features.",
       "Run ./setup.sh on your machine and report what flutter analyze and flutter test say. Until then, every Built item is unconfirmed.",
-      "Synced lyrics and offline downloads (the next two big listener features).",
-      "Studio uploads and the streaming pipeline, so Vyro has its own catalog."
+      "Connect an email provider and an SMS provider, and add your Google and Apple client IDs. Without them, real people cannot sign up with those methods.",
+      "Send listening history from the app, so the statistics pages fill with real numbers.",
+      "Synced lyrics and offline downloads, or the Studio uploads and the streaming pipeline."
     ]
   },
   "items": {
     "AUTH-02": {
-      "status": "partial",
-      "note": "Server sign-up and login work and are tested. Email verification and the app screens are missing."
+      "status": "built",
+      "note": "Sign-up, log in and email confirmation work on the server (tested) and the screens are built. Emails are only printed to the server console until an email provider is connected."
     },
     "AUTH-06": {
       "status": "partial",
-      "note": "Name, username and country are stored. Photo, language and the app screen are missing."
+      "note": "Name, username, country and language are stored; name and username can be edited. Photo and a language picker are missing."
     },
     "AUTH-08": {
-      "status": "partial",
-      "note": "The server deletes the account and anonymizes its plays (tested). No button in the app yet."
+      "status": "built",
+      "note": "Needs the typed word plus the password (server tested, dialog built)."
     },
     "AUTH-11": {
-      "status": "done",
-      "note": "Terms and privacy consent are saved with version and time at sign-up (tested)."
+      "status": "built",
+      "note": "The sign-up checkbox sends the terms version and the server stores it with the time (tested). The legal text itself is a placeholder."
     },
     "AUTH-12": {
       "status": "partial",
-      "note": "Several devices can be signed in at once. Syncing library and settings is not built."
+      "note": "Several devices can be signed in at once and the saved login renews itself. Syncing library and settings is not built."
     },
     "ART-01": {
-      "status": "partial",
-      "note": "The server upgrade step works and is tested. The app has no upgrade screen yet."
+      "status": "built",
+      "note": "Upgrade endpoint (tested) and the Become an artist screen (built)."
     },
     "ART-02": {
       "status": "built",
@@ -39,23 +39,23 @@
     },
     "ART-03": {
       "status": "partial",
-      "note": "Stage name, bio and type are stored. Photo, banner, genres and links are missing."
+      "note": "Name, type, bio, genres and links are stored. Photo and banner are missing."
     },
     "ART-04": {
-      "status": "partial",
-      "note": "Solo, group, producer/DJ and label/manager are stored and checked. No app screen yet."
+      "status": "built",
+      "note": "Solo, group, producer/DJ and label/manager on the upgrade screen, stored and checked by the server."
     },
     "ART-05": {
-      "status": "partial",
-      "note": "The declaration and its time are stored (tested). The app screen that shows it is missing."
+      "status": "built",
+      "note": "A tick box on the upgrade screen; the server stores the declaration with the time (tested)."
     },
     "ART-06": {
       "status": "partial",
-      "note": "The agreement version is recorded. The agreement text and sign-off screen are missing."
+      "note": "The agreement version is recorded and a draft agreement is shown. The real text needs legal review."
     },
     "ART-08": {
       "status": "partial",
-      "note": "Stage names must be unique in any letter case (tested). Similar-name checks and reporting are missing."
+      "note": "Look-alike names (letter case, spaces, punctuation, accents) are blocked (tested). A reporting flow is missing."
     },
     "ART-09": {
       "status": "partial",
@@ -163,7 +163,7 @@
     },
     "REC-02": {
       "status": "partial",
-      "note": "The server accepts and stores plays safely (tested). The app does not send plays yet."
+      "note": "The server accepts and stores plays safely and unlinks them for private sessions (tested). The app does not send plays yet."
     },
     "SOC-04": {
       "status": "partial",
@@ -183,7 +183,7 @@
     },
     "STA-01": {
       "status": "partial",
-      "note": "Plays, listeners, followers and saves with date ranges (server tested, screen built on demo numbers). Playlist adds are missing."
+      "note": "Plays, listeners, followers and saves with date ranges (server tested, screen reads live data when signed in). Playlist adds are missing."
     },
     "STA-02": {
       "status": "partial",
@@ -195,11 +195,11 @@
     },
     "STA-04": {
       "status": "built",
-      "note": "Search, recommendations, playlists, charts, shares, library and direct (server tested, screen on demo numbers)."
+      "note": "Search, recommendations, playlists, charts, shares, library and direct (server tested, screen reads live data when signed in)."
     },
     "STA-07": {
       "status": "built",
-      "note": "Which songs yours are blended with (server tested, screen on demo numbers)."
+      "note": "Which songs yours are blended with (server tested, screen reads live data when signed in)."
     },
     "STA-08": {
       "status": "built",
@@ -219,15 +219,15 @@
     },
     "STA-16": {
       "status": "built",
-      "note": "Every headline number shows its change against the period before (server tested, screen on demo numbers)."
+      "note": "Every headline number shows its change against the period before (server tested, screen reads live data when signed in)."
     },
     "STA-17": {
       "status": "built",
-      "note": "Retention curve per song (server tested, screen on demo numbers)."
+      "note": "Retention curve per song (server tested, screen reads live data when signed in)."
     },
     "STA-18": {
       "status": "built",
-      "note": "New, returning and super listeners (server tested, screen on demo numbers)."
+      "note": "New, returning and super listeners (server tested, screen reads live data when signed in)."
     },
     "STA-19": {
       "status": "built",
@@ -239,35 +239,35 @@
     },
     "PRF-01": {
       "status": "partial",
-      "note": "Header with name and username. No photo yet; shows a placeholder name until login is connected."
+      "note": "Header shows the real name and username. No photo yet."
     },
     "PRF-02": {
       "status": "built",
-      "note": "4 weeks, 6 months, this year, all time (server tested, screen on demo numbers)."
+      "note": "4 weeks, 6 months, this year, all time (server tested, screen reads live data when signed in)."
     },
     "PRF-03": {
       "status": "built",
-      "note": "Minutes listened with hours (server tested, screen on demo numbers)."
+      "note": "Minutes listened with hours (server tested, screen reads live data when signed in)."
     },
     "PRF-04": {
       "status": "built",
-      "note": "Listening streak in the listener's own time zone (server tested, screen on demo numbers)."
+      "note": "Listening streak in the listener's own time zone (server tested, screen reads live data when signed in)."
     },
     "PRF-05": {
       "status": "built",
-      "note": "Top artists, songs and genres (server tested, screen on demo numbers)."
+      "note": "Top artists, songs and genres (server tested, screen reads live data when signed in)."
     },
     "PRF-06": {
       "status": "built",
-      "note": "Listening clock and personality (server tested, screen on demo numbers)."
+      "note": "Listening clock and personality (server tested, screen reads live data when signed in)."
     },
     "PRF-07": {
       "status": "built",
-      "note": "Songs blended and new artists found (server tested, screen on demo numbers)."
+      "note": "Songs blended and new artists found (server tested, screen reads live data when signed in)."
     },
     "PRF-08": {
       "status": "partial",
-      "note": "The switch exists but is not saved or enforced yet."
+      "note": "Saved on the server and shown on the profile; there is no public profile yet to apply it to."
     },
     "PAY-02": {
       "status": "partial",
@@ -311,7 +311,7 @@
     },
     "SAF-05": {
       "status": "partial",
-      "note": "Account deletion works on the server. Data export is missing."
+      "note": "Account deletion works and anonymizes plays (tested). Data export is missing."
     },
     "SAF-06": {
       "status": "partial",
@@ -323,7 +323,51 @@
     },
     "NFR-10": {
       "status": "partial",
-      "note": "The server has 27 passing tests and the platform script 6. The Flutter tests are written but not run yet."
+      "note": "The server has 50 passing tests, the platform script 6 and the progress script 4. The Flutter tests are written but not run yet."
+    },
+    "AUTH-01": {
+      "status": "partial",
+      "note": "Phone sign-in works on the server (tested) and the screens are built. Codes are only printed to the server console until an SMS provider is connected."
+    },
+    "AUTH-03": {
+      "status": "partial",
+      "note": "The server checks Google and Apple tokens (tested with test keys). The buttons say \"not set up\" until your Google and Apple client IDs and the sign-in plugins are added."
+    },
+    "AUTH-04": {
+      "status": "built",
+      "note": "Continue as guest. Profile, artist studio and account actions ask a guest to sign in."
+    },
+    "AUTH-05": {
+      "status": "built",
+      "note": "Genres, moods and artists, skippable (saved on the server, tested). \"At least three artists\" is not enforced because the catalog is still empty."
+    },
+    "AUTH-07": {
+      "status": "built",
+      "note": "Reset with an emailed code; signs out every device (server tested, screens built)."
+    },
+    "AUTH-09": {
+      "status": "built",
+      "note": "Date of birth at sign-up. Under 13 refused, 13 to 15 need a parent's emailed code, explicit content locked off under 18 (server tested, screens built). Ages need legal review per market."
+    },
+    "AUTH-10": {
+      "status": "partial",
+      "note": "Private session and personalized-recommendations switches unlink plays from the listener (server tested). \"Hide activity\" does nothing yet because there is no activity feed."
+    },
+    "AUTH-15": {
+      "status": "done",
+      "note": "Codes expire after 10 minutes, lock after 5 wrong tries, 5 per hour (tested)."
+    },
+    "AUTH-16": {
+      "status": "done",
+      "note": "30-day sessions that rotate; a password reset signs out every device (tested)."
+    },
+    "AUTH-17": {
+      "status": "built",
+      "note": "Login kept in secure storage with a memory fallback; offline start shows the last saved profile (tests written, not run)."
+    },
+    "AUTH-18": {
+      "status": "built",
+      "note": "Verified-email rule and account linking (tested with test keys; not yet tried against real Google or Apple)."
     }
   }
 }

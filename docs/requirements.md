@@ -1,8 +1,8 @@
 # Vyro Music: Product Requirements
 
-**Version 0.4 · 6 October 2026 · Status: for review**
+**Version 0.5 · 7 October 2026 · Status: for review**
 
-*Changes in v0.4: background playback and local library built (new LIB-16, LIB-17, PLY-20, DEV-14, DEV-15). v0.3: statistics redesigned from the best of Spotify, Apple Music, YouTube Studio, Audiomack, stats.fm and Last.fm (STA-16 to STA-20, new module PRF for listener profiles). v0.2: Normal and Mixing playback modes (MIX-21 to MIX-23), one codebase for desktop (DEV-12, DEV-13).*
+*Changes in v0.5: login and account screens built (new AUTH-15 to AUTH-18). v0.4: background playback and local library built (new LIB-16, LIB-17, PLY-20, DEV-14, DEV-15). v0.3: statistics redesigned from the best of Spotify, Apple Music, YouTube Studio, Audiomack, stats.fm and Last.fm (STA-16 to STA-20, new module PRF for listener profiles). v0.2: Normal and Mixing playback modes (MIX-21 to MIX-23), one codebase for desktop (DEV-12, DEV-13).*
 
 ## 1. Vision
 
@@ -61,6 +61,10 @@ Each requirement has an ID, a phase tag and a checkbox.
 - [ ] **AUTH-12** [2] Multi-device login with synced library, playlists and settings.
 - [ ] **AUTH-13** [2] Device manager: view and sign out other devices.
 - [ ] **AUTH-14** [3] Optional two-factor authentication.
+- [ ] **AUTH-15** [M] One-time codes expire after 10 minutes, lock after 5 wrong tries, and at most 5 are sent per hour to one address or number.
+- [ ] **AUTH-16** [M] Sessions last 30 days and renew automatically; a password reset signs the person out of every device.
+- [ ] **AUTH-17** [M] The login survives app restarts in secure storage, and the app opens offline with the last saved profile.
+- [ ] **AUTH-18** [M] Google and Apple sign-in accept only accounts whose email the provider has confirmed, and link to an existing account with the same confirmed email.
 
 ### ART: Artist registration and verification
 *Inspired by Audiomack, Bandcamp, SoundCloud, Tidal*

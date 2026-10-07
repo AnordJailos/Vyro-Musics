@@ -1,0 +1,329 @@
+{
+  "meta": {
+    "updated": "7 October 2026",
+    "next": [
+      "Connect the login screens to the server. This turns about 25 built and partial items (accounts, artist upgrade, both statistics pages, play history) into real, working features.",
+      "Run ./setup.sh on your machine and report what flutter analyze and flutter test say. Until then, every Built item is unconfirmed.",
+      "Synced lyrics and offline downloads (the next two big listener features).",
+      "Studio uploads and the streaming pipeline, so Vyro has its own catalog."
+    ]
+  },
+  "items": {
+    "AUTH-02": {
+      "status": "partial",
+      "note": "Server sign-up and login work and are tested. Email verification and the app screens are missing."
+    },
+    "AUTH-06": {
+      "status": "partial",
+      "note": "Name, username and country are stored. Photo, language and the app screen are missing."
+    },
+    "AUTH-08": {
+      "status": "partial",
+      "note": "The server deletes the account and anonymizes its plays (tested). No button in the app yet."
+    },
+    "AUTH-11": {
+      "status": "done",
+      "note": "Terms and privacy consent are saved with version and time at sign-up (tested)."
+    },
+    "AUTH-12": {
+      "status": "partial",
+      "note": "Several devices can be signed in at once. Syncing library and settings is not built."
+    },
+    "ART-01": {
+      "status": "partial",
+      "note": "The server upgrade step works and is tested. The app has no upgrade screen yet."
+    },
+    "ART-02": {
+      "status": "built",
+      "note": "Top-bar switch between the listener tabs and the artist tabs."
+    },
+    "ART-03": {
+      "status": "partial",
+      "note": "Stage name, bio and type are stored. Photo, banner, genres and links are missing."
+    },
+    "ART-04": {
+      "status": "partial",
+      "note": "Solo, group, producer/DJ and label/manager are stored and checked. No app screen yet."
+    },
+    "ART-05": {
+      "status": "partial",
+      "note": "The declaration and its time are stored (tested). The app screen that shows it is missing."
+    },
+    "ART-06": {
+      "status": "partial",
+      "note": "The agreement version is recorded. The agreement text and sign-off screen are missing."
+    },
+    "ART-08": {
+      "status": "partial",
+      "note": "Stage names must be unique in any letter case (tested). Similar-name checks and reporting are missing."
+    },
+    "ART-09": {
+      "status": "partial",
+      "note": "Artists use the same app and library. Using their listening for recommendations is not built."
+    },
+    "ART-11": {
+      "status": "partial",
+      "note": "Every artist has a verified flag. The review process is missing."
+    },
+    "STU-03": {
+      "status": "partial",
+      "note": "Title, genre and length are stored for a song (tested). The other details are missing."
+    },
+    "LIB-01": {
+      "status": "partial",
+      "note": "Scans the Music and Download folders (Android), the Music folder (desktop) and any folder you add; only changed files are re-read. Automatic background rescans are missing."
+    },
+    "LIB-02": {
+      "status": "built",
+      "note": "mp3, m4a, aac, flac, wav, ogg, opus and aiff files are picked up."
+    },
+    "LIB-03": {
+      "status": "partial",
+      "note": "Tags are read. Cover art is not."
+    },
+    "LIB-04": {
+      "status": "partial",
+      "note": "Songs, Albums and Artists views. Genres and folders are missing."
+    },
+    "LIB-05": {
+      "status": "partial",
+      "note": "Folders can be added and removed, and clips under 30 seconds are skipped. Excluding a folder has no screen yet."
+    },
+    "LIB-07": {
+      "status": "partial",
+      "note": "Hearts and a Liked tab for songs on this device. Online songs are not covered yet."
+    },
+    "LIB-16": {
+      "status": "built",
+      "note": "Pick songs with the system picker; on phones they are copied into the app."
+    },
+    "LIB-17": {
+      "status": "built",
+      "note": "Scanning runs in the background with a live count."
+    },
+    "SRC-06": {
+      "status": "partial",
+      "note": "The mix engine never blends YouTube or license-restricted tracks (tests written). YouTube playback itself is not built."
+    },
+    "PLY-01": {
+      "status": "partial",
+      "note": "Play, pause, seek, next, previous and repeat. Shuffle is missing."
+    },
+    "PLY-02": {
+      "status": "built",
+      "note": "Notification, lock screen and headset buttons on Android, iOS and macOS."
+    },
+    "PLY-03": {
+      "status": "partial",
+      "note": "The queue works inside the player. There is no queue screen (reorder, remove, history)."
+    },
+    "PLY-04": {
+      "status": "partial",
+      "note": "Mini player and full Now Playing screen. Swipe gestures are missing."
+    },
+    "PLY-05": {
+      "status": "partial",
+      "note": "The audio session is set up for music so calls and other apps are handled by the system. Not tested on a phone."
+    },
+    "PLY-06": {
+      "status": "built",
+      "note": "Headset and Bluetooth buttons go through the system media controls."
+    },
+    "PLY-20": {
+      "status": "built",
+      "note": "Same work as PLY-02: background playback with system controls on Android, iOS and macOS."
+    },
+    "MIX-01": {
+      "status": "built",
+      "note": "Equal-power blend from 1 to 12 seconds (Normal mode is the off setting)."
+    },
+    "MIX-07": {
+      "status": "partial",
+      "note": "Songs on this device are blended. Downloaded online songs do not exist yet."
+    },
+    "MIX-08": {
+      "status": "built",
+      "note": "Songs marked not mixable, and YouTube songs, change with a clean cut (tests written)."
+    },
+    "MIX-21": {
+      "status": "built",
+      "note": "Normal and Mixing modes on the player screen."
+    },
+    "MIX-22": {
+      "status": "built",
+      "note": "Separate blend lengths for end of song and for next/back."
+    },
+    "MIX-23": {
+      "status": "built",
+      "note": "Back restarts the song after 3 seconds, otherwise goes to the earlier song."
+    },
+    "DSC-01": {
+      "status": "partial",
+      "note": "Search covers songs on this device only."
+    },
+    "REC-02": {
+      "status": "partial",
+      "note": "The server accepts and stores plays safely (tested). The app does not send plays yet."
+    },
+    "SOC-04": {
+      "status": "partial",
+      "note": "Server follow and unfollow for artists (tested). No app screen."
+    },
+    "UIX-01": {
+      "status": "built",
+      "note": "Midnight, Daylight, AMOLED black and follow-system. The choice is not saved between launches yet."
+    },
+    "UIX-07": {
+      "status": "built",
+      "note": "Aurora, Sunset, Forest and Ocean accents."
+    },
+    "UIX-12": {
+      "status": "partial",
+      "note": "Empty and loading states exist for the Library and statistics, not everywhere."
+    },
+    "STA-01": {
+      "status": "partial",
+      "note": "Plays, listeners, followers and saves with date ranges (server tested, screen built on demo numbers). Playlist adds are missing."
+    },
+    "STA-02": {
+      "status": "partial",
+      "note": "Finish rate and skip rate per song. Replays and average listen time are missing."
+    },
+    "STA-03": {
+      "status": "partial",
+      "note": "Countries only. Cities, age bands and devices are missing."
+    },
+    "STA-04": {
+      "status": "built",
+      "note": "Search, recommendations, playlists, charts, shares, library and direct (server tested, screen on demo numbers)."
+    },
+    "STA-07": {
+      "status": "built",
+      "note": "Which songs yours are blended with (server tested, screen on demo numbers)."
+    },
+    "STA-08": {
+      "status": "built",
+      "note": "Last 48 hours hour by hour (shown at any time, not only after a release)."
+    },
+    "STA-10": {
+      "status": "done",
+      "note": "Groups with fewer than 5 listeners are folded into Other (tested)."
+    },
+    "STA-11": {
+      "status": "partial",
+      "note": "The 30-second stream rule is built and tested. Fraud filtering is missing."
+    },
+    "STA-14": {
+      "status": "partial",
+      "note": "Server numbers for monthly listeners and followers (tested). No artist page screen."
+    },
+    "STA-16": {
+      "status": "built",
+      "note": "Every headline number shows its change against the period before (server tested, screen on demo numbers)."
+    },
+    "STA-17": {
+      "status": "built",
+      "note": "Retention curve per song (server tested, screen on demo numbers)."
+    },
+    "STA-18": {
+      "status": "built",
+      "note": "New, returning and super listeners (server tested, screen on demo numbers)."
+    },
+    "STA-19": {
+      "status": "built",
+      "note": "7 days, 28 days, 90 days and 12 months."
+    },
+    "STA-20": {
+      "status": "built",
+      "note": "Plays by hour for the last 48 hours."
+    },
+    "PRF-01": {
+      "status": "partial",
+      "note": "Header with name and username. No photo yet; shows a placeholder name until login is connected."
+    },
+    "PRF-02": {
+      "status": "built",
+      "note": "4 weeks, 6 months, this year, all time (server tested, screen on demo numbers)."
+    },
+    "PRF-03": {
+      "status": "built",
+      "note": "Minutes listened with hours (server tested, screen on demo numbers)."
+    },
+    "PRF-04": {
+      "status": "built",
+      "note": "Listening streak in the listener's own time zone (server tested, screen on demo numbers)."
+    },
+    "PRF-05": {
+      "status": "built",
+      "note": "Top artists, songs and genres (server tested, screen on demo numbers)."
+    },
+    "PRF-06": {
+      "status": "built",
+      "note": "Listening clock and personality (server tested, screen on demo numbers)."
+    },
+    "PRF-07": {
+      "status": "built",
+      "note": "Songs blended and new artists found (server tested, screen on demo numbers)."
+    },
+    "PRF-08": {
+      "status": "partial",
+      "note": "The switch exists but is not saved or enforced yet."
+    },
+    "PAY-02": {
+      "status": "partial",
+      "note": "Paywall flags exist on the server and default to off. The app does not read them yet."
+    },
+    "BKE-01": {
+      "status": "partial",
+      "note": "Versioned /v1 API. Rate limits on sign-in only."
+    },
+    "BKE-02": {
+      "status": "partial",
+      "note": "PostgreSQL holds users, artists, songs, follows, saves and plays. Playlists and a separate analytics store are missing."
+    },
+    "BKE-13": {
+      "status": "partial",
+      "note": "A flags table and a read endpoint. No admin screen to change them."
+    },
+    "BKE-15": {
+      "status": "partial",
+      "note": "Plays are stored straight into the database. No queue or stream yet."
+    },
+    "QUA-03": {
+      "status": "partial",
+      "note": "FLAC and ALAC files are accepted and played by the platform players. Bit-perfect output is not handled."
+    },
+    "DEV-01": {
+      "status": "partial",
+      "note": "One shared Flutter codebase. A custom native audio engine is not built."
+    },
+    "DEV-02": {
+      "status": "built",
+      "note": "Same work as PLY-02."
+    },
+    "DEV-03": {
+      "status": "partial",
+      "note": "The setup script adds the Android service and permissions and the iOS background mode. Battery-optimization handling is missing."
+    },
+    "DEV-12": {
+      "status": "built",
+      "note": "setup.sh builds Android, iOS, Windows and macOS from one codebase."
+    },
+    "SAF-05": {
+      "status": "partial",
+      "note": "Account deletion works on the server. Data export is missing."
+    },
+    "SAF-06": {
+      "status": "partial",
+      "note": "Passwords are hashed with scrypt. Encryption in transit comes with deployment."
+    },
+    "SAF-12": {
+      "status": "partial",
+      "note": "Rate limits on sign-in. Nothing for uploads yet."
+    },
+    "NFR-10": {
+      "status": "partial",
+      "note": "The server has 27 passing tests and the platform script 6. The Flutter tests are written but not run yet."
+    }
+  }
+}

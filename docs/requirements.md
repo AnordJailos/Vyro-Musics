@@ -1,8 +1,8 @@
 # Vyro Music: Product Requirements
 
-**Version 0.5 · 7 October 2026 · Status: for review**
+**Version 0.6 · 8 October 2026 · Status: for review**
 
-*Changes in v0.5: login and account screens built (new AUTH-15 to AUTH-18). v0.4: background playback and local library built (new LIB-16, LIB-17, PLY-20, DEV-14, DEV-15). v0.3: statistics redesigned from the best of Spotify, Apple Music, YouTube Studio, Audiomack, stats.fm and Last.fm (STA-16 to STA-20, new module PRF for listener profiles). v0.2: Normal and Mixing playback modes (MIX-21 to MIX-23), one codebase for desktop (DEV-12, DEV-13).*
+*Changes in v0.6: catalog, Studio uploads and streaming built (new STU-19, STU-20). v0.5: login and account screens built (new AUTH-15 to AUTH-18). v0.4: background playback and local library built (new LIB-16, LIB-17, PLY-20, DEV-14, DEV-15). v0.3: statistics redesigned from the best of Spotify, Apple Music, YouTube Studio, Audiomack, stats.fm and Last.fm (STA-16 to STA-20, new module PRF for listener profiles). v0.2: Normal and Mixing playback modes (MIX-21 to MIX-23), one codebase for desktop (DEV-12, DEV-13).*
 
 ## 1. Vision
 
@@ -106,6 +106,8 @@ Each requirement has an ID, a phase tag and a checkbox.
 - [ ] **STU-16** [3] Short looping visual per track.
 - [ ] **STU-17** [3] Music video upload or link.
 - [ ] **STU-18** [3] Announcements to followers.
+- [ ] **STU-19** [M] Removing a song deletes its files, while past plays keep counting in the artist's statistics.
+- [ ] **STU-20** [M] Uploads have a size limit, checked before sending and again by the server, and a failed upload can be retried without creating a second song.
 
 ### LIB: Local library
 *Inspired by Lark Player, Poweramp, Apple Music*

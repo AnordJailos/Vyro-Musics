@@ -1,11 +1,11 @@
 {
   "meta": {
-    "updated": "7 October 2026",
+    "updated": "8 October 2026",
     "next": [
       "Run ./setup.sh on your machine and report what flutter analyze and flutter test say. Until then, every Built item is unconfirmed.",
-      "Connect an email provider and an SMS provider, and add your Google and Apple client IDs. Without them, real people cannot sign up with those methods.",
-      "Send listening history from the app, so the statistics pages fill with real numbers.",
-      "Synced lyrics and offline downloads, or the Studio uploads and the streaming pipeline."
+      "Send listening history from the app, so the statistics pages fill with real numbers now that songs can be streamed.",
+      "Review of uploads and a copyright check before opening uploads to the public. Songs currently go live the moment an artist publishes them.",
+      "Synced lyrics and offline downloads."
     ]
   },
   "items": {
@@ -67,7 +67,7 @@
     },
     "STU-03": {
       "status": "partial",
-      "note": "Title, genre and length are stored for a song (tested). The other details are missing."
+      "note": "Title, genre, explicit, allow-blending and length are stored. Featured artists, mood, language, release date, credits and ISRC are missing."
     },
     "LIB-01": {
       "status": "partial",
@@ -159,7 +159,7 @@
     },
     "DSC-01": {
       "status": "partial",
-      "note": "Search covers songs on this device only."
+      "note": "Songs and artist names on Vyro, plus local files. Albums, playlists and users are missing."
     },
     "REC-02": {
       "status": "partial",
@@ -323,7 +323,7 @@
     },
     "NFR-10": {
       "status": "partial",
-      "note": "The server has 50 passing tests, the platform script 6 and the progress script 4. The Flutter tests are written but not run yet."
+      "note": "The server has 70 passing tests (with real MP3 and WAV files), the platform script 6 and the progress script 4. The Flutter tests are written but not run yet."
     },
     "AUTH-01": {
       "status": "partial",
@@ -368,6 +368,94 @@
     "AUTH-18": {
       "status": "built",
       "note": "Verified-email rule and account linking (tested with test keys; not yet tried against real Google or Apple)."
+    },
+    "STU-01": {
+      "status": "built",
+      "note": "The server accepts MP3, M4A, FLAC, WAV, OGG and AIFF (tested with real files); the Studio screen picks and uploads them."
+    },
+    "STU-04": {
+      "status": "partial",
+      "note": "JPEG, PNG and WebP covers up to 5 MB are checked and stored. Size and ratio checks are missing."
+    },
+    "STU-06": {
+      "status": "partial",
+      "note": "Length, bitrate and sample-rate checks (tested with real files). Clipping, silence and fake-upsample checks are missing."
+    },
+    "STU-08": {
+      "status": "partial",
+      "note": "Draft, publish, take offline and delete work (tested). Scheduling is missing."
+    },
+    "STU-09": {
+      "status": "partial",
+      "note": "The server can change title, genre, explicit and blending after publishing. There is no screen for it and no change history."
+    },
+    "STU-13": {
+      "status": "partial",
+      "note": "Blending can be switched off per song. Download and sharing permissions are stored but have no screen."
+    },
+    "STU-19": {
+      "status": "done",
+      "note": "Deleting a song removes its files and keeps its plays (tested)."
+    },
+    "STU-20": {
+      "status": "built",
+      "note": "300 MB limit checked before sending and by the server, and a failed upload is retried on the same song (server tested, screen built)."
+    },
+    "SRC-01": {
+      "status": "partial",
+      "note": "Songs stream from short-lived signed addresses with byte ranges (tested). Adaptive quality is missing."
+    },
+    "SRC-02": {
+      "status": "partial",
+      "note": "\"Vyro\" and \"On device\" badges in search and on Vyro songs. No \"Mixable\" indicator yet."
+    },
+    "SRC-03": {
+      "status": "built",
+      "note": "One search across Vyro and the music on the device, grouped by source. YouTube is not part of it yet."
+    },
+    "DSC-04": {
+      "status": "partial",
+      "note": "New on Vyro and Top this week. Continue listening and picks for you are missing."
+    },
+    "DSC-05": {
+      "status": "partial",
+      "note": "Weekly top songs (worldwide on screen, per country in the server). Albums and artists charts are missing."
+    },
+    "DSC-08": {
+      "status": "done",
+      "note": "Explicit songs are hidden from guests and from anyone with explicit content off, in search, new, charts and streaming (tested)."
+    },
+    "BKE-03": {
+      "status": "partial",
+      "note": "Files are stored behind a storage layer on local disk. S3-style storage and a CDN are missing."
+    },
+    "BKE-04": {
+      "status": "partial",
+      "note": "Lossless uploads get a smaller AAC streaming copy when ffmpeg is installed. Multiple bitrates and HLS are missing."
+    },
+    "BKE-05": {
+      "status": "done",
+      "note": "Loudness is measured at upload with ffmpeg (EBU R128) and stored (tested; needs ffmpeg on the server)."
+    },
+    "BKE-07": {
+      "status": "partial",
+      "note": "Search uses the database (prefix matches first). Typo tolerance and a search engine are missing."
+    },
+    "BKE-08": {
+      "status": "done",
+      "note": "Signed, expiring stream addresses; tampered or expired ones are refused (tested)."
+    },
+    "QUA-02": {
+      "status": "partial",
+      "note": "Bitrate, sample-rate and length gates. Fake-upsample detection is missing."
+    },
+    "MIX-04": {
+      "status": "partial",
+      "note": "Only loudness is measured so far. Beats, key and mix points are missing."
+    },
+    "PLY-13": {
+      "status": "partial",
+      "note": "Loudness is measured and sent to the app, but not applied to playback yet."
     }
   }
 }

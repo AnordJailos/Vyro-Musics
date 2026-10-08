@@ -16,11 +16,19 @@ class ListenerProfilePage extends StatefulWidget {
     required this.repository,
     this.displayName = 'You',
     this.username = 'you',
+    this.shareListening,
+    this.onShareChanged,
+    this.onOpenAccount,
   });
 
   final StatsRepository repository;
   final String displayName;
   final String username;
+
+  /// The saved choice, when the page is connected to an account.
+  final bool? shareListening;
+  final ValueChanged<bool>? onShareChanged;
+  final VoidCallback? onOpenAccount;
 
   @override
   State<ListenerProfilePage> createState() => _ListenerProfilePageState();
@@ -29,7 +37,7 @@ class ListenerProfilePage extends StatefulWidget {
 class _ListenerProfilePageState extends State<ListenerProfilePage> {
   ListenerRange _range = ListenerRange.fourWeeks;
   late Future<ListenerStats> _future = widget.repository.listenerStats(_range);
-  bool _public = true;
+  late bool _public = widget.shareListening ?? true;
 
   void _select(ListenerRange range) {
     if (range == _range) return;
@@ -64,6 +72,8 @@ class _ListenerProfilePageState extends State<ListenerProfilePage> {
                     ],
                   ),
                 ),
+                if (widget.onOpenAccount != null)
+                  IconButton(tooltip: 'Account and privacy', icon: const Icon(Icons.manage_accounts_outlined), onPressed: widget.onOpenAccount),
               ],
             ),
             const SizedBox(height: 16),
@@ -91,7 +101,10 @@ class _ListenerProfilePageState extends State<ListenerProfilePage> {
               title: const Text('Show my listening on my profile'),
               subtitle: const Text('When this is off, only you can see these numbers.'),
               value: _public,
-              onChanged: (v) => setState(() => _public = v),
+              onChanged: (v) {
+                setState(() => _public = v);
+                widget.onShareChanged?.call(v);
+              },
             ),
             const SizedBox(height: 16),
           ],

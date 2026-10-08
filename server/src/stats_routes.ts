@@ -57,7 +57,10 @@ export function registerStatsRoutes({ app, db, requireUser, now, minCohort }: De
   app.post('/v1/events/listens', userOnly, async (req, reply) => {
     const parsed = listensBody.safeParse(req.body);
     if (!parsed.success) return invalid(reply, parsed.error);
-    const country = (await db.query<{ country: string | null }>('select country from users where id = $1', [req.userId])).rows[0]?.country ?? null;
+    const me = (await db.query<{ country: string | null; private_session: boolean; personalization: boolean }>('select country, private_session, personalization from users where id = $1', [req.userId])).rows[0];
+    const country = me?.country ?? null;
+    // A private session, or personalization turned off: the play still counts for the artist, but is not linked to the listener.
+    const listenerId = me && (me.private_session || !me.personalization) ? null : req.userId;
     const latest = now().getTime() + 5 * 60_000;
     let accepted = 0;
     for (const ev of parsed.data.events) {
@@ -70,7 +73,7 @@ export function registerStatsRoutes({ app, db, requireUser, now, minCohort }: De
                 $5::text, $6::text, $7::text, (select id from tracks where id = $8::uuid), $9::text
          from tracks t where t.id = $10::uuid
          on conflict (id) do nothing returning id`,
-        [ev.id, req.userId, ev.startedAt, ev.listenedMs, ev.source, ev.platform, ev.mode, ev.mixedWithTrackId ?? null, country, ev.trackId],
+        [ev.id, listenerId, ev.startedAt, ev.listenedMs, ev.source, ev.platform, ev.mode, ev.mixedWithTrackId ?? null, country, ev.trackId],
       );
       accepted += res.rows.length;
     }
@@ -131,7 +134,7 @@ export function registerStatsRoutes({ app, db, requireUser, now, minCohort }: De
     if (p.data.id === req.userId) return reply.code(400).send({ error: 'cannot_follow_yourself' });
     const exists = (await db.query('select 1 from artist_profiles where user_id = $1', [p.data.id])).rows.length > 0;
     if (!exists) return reply.code(404).send({ error: 'not_found' });
-    await db.query('insert into follows (user_id, artist_id) values ($1, $2) on conflict do nothing', [req.userId, p.data.id]);
+    await db.query('insert into follows (user_id, artist_id, created_at) values ($1, $2, $3::timestamptz) on conflict do nothing', [req.userId, p.data.id, now().toISOString()]);
     return reply.code(204).send();
   });
 
@@ -147,7 +150,7 @@ export function registerStatsRoutes({ app, db, requireUser, now, minCohort }: De
     if (!p.success) return invalid(reply, p.error);
     const exists = (await db.query('select 1 from tracks where id = $1', [p.data.id])).rows.length > 0;
     if (!exists) return reply.code(404).send({ error: 'not_found' });
-    await db.query('insert into saves (user_id, track_id) values ($1, $2) on conflict do nothing', [req.userId, p.data.id]);
+    await db.query('insert into saves (user_id, track_id, created_at) values ($1, $2, $3::timestamptz) on conflict do nothing', [req.userId, p.data.id, now().toISOString()]);
     return reply.code(204).send();
   });
 

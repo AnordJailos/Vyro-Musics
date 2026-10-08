@@ -102,6 +102,7 @@ test('macOS: allows network and picked files, turns the sandbox off, and is repe
   assert.match(once.text, /app-sandbox<\/key>\s*<false\/>/);
   assert.match(once.text, /network\.client<\/key>\s*<true\/>/);
   assert.match(once.text, /files\.user-selected\.read-only<\/key>\s*<true\/>/);
+  assert.match(once.text, /keychain-access-groups<\/key>\s*<array\/>/);
   assert.match(once.text, /cs\.allow-jit<\/key>\s*<true\/>/, 'other entitlements are kept');
   assert.deepEqual(patchEntitlements(once.text).changes, []);
 });

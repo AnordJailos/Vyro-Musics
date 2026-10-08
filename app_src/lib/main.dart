@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:audio_service/audio_service.dart';
@@ -9,6 +10,12 @@ import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'audio/audio_handler.dart';
 import 'audio/just_audio_deck.dart';
 import 'audio/playback_controller.dart';
+import 'auth/api_client.dart';
+import 'auth/auth_api.dart';
+import 'auth/auth_controller.dart';
+import 'auth/screens/auth_gate.dart';
+import 'auth/social_sign_in.dart';
+import 'auth/token_store.dart';
 import 'library/device_library_platform.dart';
 import 'library/library_controller.dart';
 import 'library/library_models.dart' show TagInfo;
@@ -16,6 +23,7 @@ import 'library/library_scanner.dart';
 import 'library/library_store.dart';
 import 'library/tag_reader.dart';
 import 'shell/app_shell.dart';
+import 'stats/api_stats_repository.dart';
 import 'stats/demo_stats_repository.dart';
 import 'stats/models.dart';
 import 'theme/theme_controller.dart';
@@ -42,8 +50,8 @@ Future<void> main() async {
         androidNotificationOngoing: true,
       ),
     );
-    final session = await AudioSession.instance;
-    await session.configure(const AudioSessionConfiguration.music());
+    final audioSession = await AudioSession.instance;
+    await audioSession.configure(const AudioSessionConfiguration.music());
   }
 
   final library = LibraryController(
@@ -53,17 +61,46 @@ Future<void> main() async {
   );
   await library.load();
 
-  runApp(VyroApp(playback: playback, library: library));
+  // The server address. Run with --dart-define=API_URL=http://10.0.2.2:3000 on an Android emulator.
+  const apiUrl = String.fromEnvironment('API_URL', defaultValue: 'http://localhost:3000');
+  final session = ApiSession();
+  final client = ApiClient(baseUrl: Uri.parse(apiUrl), session: session);
+  final auth = AuthController(
+    api: HttpAuthApi(client),
+    store: SecureTokenStore(),
+    session: session,
+    deviceName: kIsWeb ? 'web' : '${Platform.operatingSystem} app',
+  );
+  unawaited(auth.restore());
+
+  runApp(VyroApp(
+    playback: playback,
+    library: library,
+    auth: auth,
+    stats: ApiStatsRepository(client),
+    social: const UnconfiguredSocialSignIn(),
+  ));
 }
 
 class VyroApp extends StatefulWidget {
-  VyroApp({super.key, required this.playback, StatsRepository? stats, LibraryController? library})
-      : stats = stats ?? DemoStatsRepository(),
-        library = library ?? LibraryController(store: MemoryLibraryStore(), scanner: LibraryScanner(readTags: _noTags));
+  VyroApp({
+    super.key,
+    required this.playback,
+    StatsRepository? stats,
+    LibraryController? library,
+    AuthController? auth,
+    this.social = const UnconfiguredSocialSignIn(),
+  })  : stats = stats ?? DemoStatsRepository(),
+        library = library ?? LibraryController(store: MemoryLibraryStore(), scanner: LibraryScanner(readTags: _noTags)),
+        auth = auth ?? (AuthController(api: const OfflineAuthApi(), store: MemoryTokenStore())..continueAsGuest());
 
   final PlaybackController playback;
+
+  /// Statistics shown to signed-in people.
   final StatsRepository stats;
   final LibraryController library;
+  final AuthController auth;
+  final SocialSignIn social;
 
   @override
   State<VyroApp> createState() => _VyroAppState();
@@ -90,7 +127,11 @@ class _VyroAppState extends State<VyroApp> {
         theme: _theme.light,
         darkTheme: _theme.dark,
         themeMode: _theme.themeMode,
-        home: AppShell(theme: _theme, playback: widget.playback, stats: widget.stats, library: widget.library),
+        home: AuthGate(
+          auth: widget.auth,
+          social: widget.social,
+          appBuilder: (_) => AppShell(theme: _theme, playback: widget.playback, stats: widget.stats, library: widget.library, auth: widget.auth),
+        ),
       ),
     );
   }

@@ -27,12 +27,30 @@ export function tokenKit(secret: string) {
   const key = new TextEncoder().encode(secret);
   return {
     async signAccess(userId: string): Promise<string> {
-      return new SignJWT({}).setProtectedHeader({ alg: 'HS256' }).setSubject(userId).setIssuedAt().setExpirationTime(ACCESS_TTL).sign(key);
+      return new SignJWT({})
+        .setProtectedHeader({ alg: 'HS256' })
+        .setSubject(userId)
+        .setAudience('vyro-access')
+        .setIssuedAt()
+        .setExpirationTime(ACCESS_TTL)
+        .sign(key);
     },
     async verifyAccess(token: string): Promise<string | null> {
       try {
-        const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'] });
+        const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'], audience: 'vyro-access' });
         return payload.sub ?? null;
+      } catch {
+        return null;
+      }
+    },
+    /** A short-lived pass given to someone who proved a phone number or social account but has no profile yet. */
+    async signSignup(claims: Record<string, unknown>): Promise<string> {
+      return new SignJWT(claims).setProtectedHeader({ alg: 'HS256' }).setAudience('vyro-signup').setIssuedAt().setExpirationTime('30m').sign(key);
+    },
+    async verifySignup(token: string): Promise<Record<string, unknown> | null> {
+      try {
+        const { payload } = await jwtVerify(token, key, { algorithms: ['HS256'], audience: 'vyro-signup' });
+        return payload as Record<string, unknown>;
       } catch {
         return null;
       }

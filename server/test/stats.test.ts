@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { memoryDb, type Db } from '../src/db.js';
+import { MemoryMessenger } from '../src/messaging.js';
 import { migrate } from '../src/migrate.js';
 import { artistStats, personaFromClock, streakFrom } from '../src/stats.js';
 
@@ -11,6 +12,7 @@ const DAY = 86_400_000;
 
 let app: Awaited<ReturnType<typeof buildApp>>;
 let db: Db;
+const messenger = new MemoryMessenger();
 
 const call = (method: 'GET' | 'POST' | 'DELETE', url: string, token?: string, payload?: object) =>
   app.inject({ method, url, payload, headers: token ? { authorization: `Bearer ${token}` } : {} });
@@ -22,9 +24,11 @@ async function signUp(name: string, country: string) {
     displayName: name,
     username: name,
     country,
+    birthDate: '1990-01-15',
     acceptedTermsVersion: '2026-10',
   });
   const body = res.json();
+  await call('POST', '/v1/auth/email/verify', body.accessToken, { code: messenger.lastCode(`${name}@example.com`) });
   return { id: body.user.id as string, token: body.accessToken as string };
 }
 
@@ -50,7 +54,7 @@ let t2: string;
 beforeAll(async () => {
   db = await memoryDb();
   await migrate(db);
-  app = await buildApp({ db, jwtSecret: 'x'.repeat(40), authRateLimit: 1000, now: () => NOW, minCohort: 1 });
+  app = await buildApp({ db, jwtSecret: 'x'.repeat(40), authRateLimit: 1000, now: () => NOW, minCohort: 1, messenger });
 
   artist = await signUp('starartist', 'TZ');
   await call('POST', '/v1/artists/me', artist.token, { stageName: 'Stats Star', artistType: 'solo', rightsDeclaration: true, agreementVersion: '2026-10' });
@@ -95,7 +99,7 @@ describe('play ingest', () => {
 
     const me = (await call('GET', '/v1/me/stats?range=all', u.token)).json();
     expect(me.plays).toBe(1); // only the 31 s play is a valid stream
-    await call('DELETE', '/v1/me', u.token);
+    await call('POST', '/v1/me/delete', u.token, { confirm: 'DELETE', password: 'correct-horse-battery' });
   });
 
   it('requires a login', async () => {

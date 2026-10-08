@@ -17,7 +17,7 @@ Needs Node 22+ and PostgreSQL (use the current stable release).
 ```bash
 cd server
 npm install
-npm test                      # 27 tests, run on an in-memory Postgres
+npm test                      # 50 tests, run on an in-memory Postgres
 export DATABASE_URL=postgres://user:pass@localhost:5432/vyro
 export JWT_SECRET=$(openssl rand -hex 32)
 npm run dev
@@ -71,6 +71,24 @@ Scans the usual music folders (Music and Download on Android, `Music` on Windows
 background thread, and only re-reads files that changed. Hidden folders and clips under 30 seconds are skipped.
 You can also add a folder or pick songs. iOS cannot scan the device, so songs come in through "Add songs".
 Songs are grouped into Songs, Albums, Artists and Liked, with search; tapping a song plays it with the mix engine.
+
+## Accounts and sign-in
+
+Sign-up and log in with email and password (with an emailed confirmation code), with a phone number and a texted
+code, or with Google or Apple. Also: guest mode, a first-launch taste picker, password reset, age rules (under 13
+cannot join, 13 to 15 need a parent's emailed code, explicit content stays off under 18), privacy switches
+(private session, personalized recommendations), account deletion, and "Become an artist".
+
+- **Server settings**: `DATABASE_URL`, `JWT_SECRET`, and optionally `GOOGLE_CLIENT_IDS` and `APPLE_CLIENT_IDS`
+  (comma-separated). Until an email and SMS provider is connected (`server/src/messaging.ts`), **codes are printed in
+  the server console**: look there to find the code you need to type in the app.
+- **App server address**: `flutter run --dart-define=API_URL=http://10.0.2.2:3000` on an Android emulator. Other
+  platforms default to `http://localhost:3000`.
+- **Needs from you before real sign-ups**: an email provider, an SMS provider, your Google and Apple client IDs with
+  the sign-in plugins (the buttons say "not set up" until then), and the final Terms, Privacy Policy and artist
+  agreement (the screens show placeholders). The age limits are a starting point and need legal review per market.
+- **Saved login**: held in the system's secure storage. If a platform refuses it, the app keeps working and the
+  person simply logs in again next launch. Without a connection the app opens with the last saved profile.
 
 ## Statistics
 

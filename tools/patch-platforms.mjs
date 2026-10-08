@@ -97,7 +97,7 @@ function setBool(plist, key, value, changes) {
 }
 
 /**
- * macOS: allow network access and user-selected files, and turn the App Sandbox off so the
+ * macOS: allow network access, user-selected files and the Keychain, and turn the App Sandbox off so the
  * app can read the real Music folder. Fine for development and for apps shipped outside the
  * Mac App Store; a store release needs the sandbox back on, with saved folder permissions.
  */
@@ -107,6 +107,12 @@ export function patchEntitlements(plist) {
   out = setBool(out, 'com.apple.security.network.client', true, changes);
   out = setBool(out, 'com.apple.security.files.user-selected.read-only', true, changes);
   out = setBool(out, 'com.apple.security.app-sandbox', false, changes);
+  // Keychain access, so the login can be saved securely (flutter_secure_storage asks for this).
+  if (!out.includes('<key>keychain-access-groups</key>')) {
+    const at = out.lastIndexOf('</dict>');
+    out = `${out.slice(0, at)}\t<key>keychain-access-groups</key>\n\t<array/>\n${out.slice(at)}`;
+    changes.push('keychain-access-groups added');
+  }
   return { text: out, changes };
 }
 

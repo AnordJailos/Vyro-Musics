@@ -1,115 +1,127 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { buildApp } from '../src/app.js';
-import { memoryDb } from '../src/db.js';
-import { migrate } from '../src/migrate.js';
+import { PASSWORD, api, artistBody, makeApp, registerBody, signUpVerified, type TestApp } from './helpers.js';
+import type { MemoryMessenger } from '../src/messaging.js';
 
-let app: Awaited<ReturnType<typeof buildApp>>;
+let app: TestApp;
+let messenger: MemoryMessenger;
+let call: ReturnType<typeof api>['call'];
 
 beforeAll(async () => {
-  const db = await memoryDb();
-  await migrate(db);
-  app = await buildApp({ db, jwtSecret: 'x'.repeat(40), authRateLimit: 1000 });
+  const made = await makeApp();
+  app = made.app;
+  messenger = made.messenger;
+  call = api(app).call;
 }, 60_000);
 afterAll(() => app.close());
 
-const post = (url: string, payload: unknown, token?: string) =>
-  app.inject({ method: 'POST', url, payload: payload as object, headers: token ? { authorization: `Bearer ${token}` } : {} });
-
-const newUser = (n: string, extra: object = {}) => ({
-  email: `${n}@Example.com`,
-  password: 'correct-horse-battery',
-  displayName: `User ${n}`,
-  username: `user_${n}`,
-  acceptedTermsVersion: '2026-10',
-  ...extra,
-});
-
 describe('accounts', () => {
-  it('registers a listener and normalizes the email', async () => {
-    const res = await post('/v1/auth/register', newUser('amani'));
+  it('registers a listener, normalizes the email and records the consent', async () => {
+    const res = await call('POST', '/v1/auth/register', null, registerBody('amani'));
     expect(res.statusCode).toBe(201);
     const body = res.json();
     expect(body.user.email).toBe('amani@example.com');
     expect(body.user.modes).toEqual(['listener']);
+    expect(body.user.emailVerified).toBe(false);
+    expect(body.user.isMinor).toBe(false);
     expect(body.accessToken).toBeTruthy();
+    expect(messenger.sent.some((m) => m.to === 'amani@example.com' && m.channel === 'email')).toBe(true);
   });
 
-  it('rejects weak passwords and bad usernames', async () => {
-    expect((await post('/v1/auth/register', newUser('weak', { password: 'short' }))).statusCode).toBe(400);
-    expect((await post('/v1/auth/register', newUser('bad', { username: 'Bad Name!' }))).statusCode).toBe(400);
+  it('rejects weak passwords, bad usernames and a missing birth date', async () => {
+    expect((await call('POST', '/v1/auth/register', null, registerBody('weak', { password: 'short' }))).statusCode).toBe(400);
+    expect((await call('POST', '/v1/auth/register', null, registerBody('bad', { username: 'Bad Name!' }))).statusCode).toBe(400);
+    expect((await call('POST', '/v1/auth/register', null, registerBody('nodob', { birthDate: undefined }))).statusCode).toBe(400);
   });
 
   it('rejects a duplicate email regardless of case', async () => {
-    await post('/v1/auth/register', newUser('dup'));
-    const res = await post('/v1/auth/register', newUser('other', { email: 'DUP@example.com' }));
+    await call('POST', '/v1/auth/register', null, registerBody('dup'));
+    const res = await call('POST', '/v1/auth/register', null, registerBody('other', { email: 'DUP@example.com' }));
     expect(res.statusCode).toBe(409);
   });
 
   it('logs in, and refuses a wrong password', async () => {
-    await post('/v1/auth/register', newUser('login'));
-    expect((await post('/v1/auth/login', { email: 'login@example.com', password: 'correct-horse-battery' })).statusCode).toBe(200);
-    expect((await post('/v1/auth/login', { email: 'login@example.com', password: 'wrong-password-1' })).statusCode).toBe(401);
-    expect((await post('/v1/auth/login', { email: 'nobody@example.com', password: 'wrong-password-1' })).statusCode).toBe(401);
+    await call('POST', '/v1/auth/register', null, registerBody('login'));
+    expect((await call('POST', '/v1/auth/login', null, { email: 'login@example.com', password: PASSWORD })).statusCode).toBe(200);
+    expect((await call('POST', '/v1/auth/login', null, { email: 'login@example.com', password: 'wrong-password-1' })).statusCode).toBe(401);
+    expect((await call('POST', '/v1/auth/login', null, { email: 'nobody@example.com', password: 'wrong-password-1' })).statusCode).toBe(401);
   });
 
   it('protects /v1/me and returns the profile with a token', async () => {
-    expect((await app.inject({ method: 'GET', url: '/v1/me' })).statusCode).toBe(401);
-    const { accessToken } = (await post('/v1/auth/register', newUser('me'))).json();
-    const res = await app.inject({ method: 'GET', url: '/v1/me', headers: { authorization: `Bearer ${accessToken}` } });
+    expect((await call('GET', '/v1/me')).statusCode).toBe(401);
+    const { accessToken } = (await call('POST', '/v1/auth/register', null, registerBody('me'))).json();
+    const res = await call('GET', '/v1/me', accessToken);
     expect(res.statusCode).toBe(200);
     expect(res.json().username).toBe('user_me');
   });
 
   it('rotates refresh tokens and rejects reuse', async () => {
-    const { refreshToken } = (await post('/v1/auth/register', newUser('rot'))).json();
-    const first = await post('/v1/auth/refresh', { refreshToken });
+    const { refreshToken } = (await call('POST', '/v1/auth/register', null, registerBody('rot'))).json();
+    const first = await call('POST', '/v1/auth/refresh', null, { refreshToken });
     expect(first.statusCode).toBe(200);
-    expect((await post('/v1/auth/refresh', { refreshToken })).statusCode).toBe(401);
-    expect((await post('/v1/auth/refresh', { refreshToken: first.json().refreshToken })).statusCode).toBe(200);
+    expect((await call('POST', '/v1/auth/refresh', null, { refreshToken })).statusCode).toBe(401);
+    expect((await call('POST', '/v1/auth/refresh', null, { refreshToken: first.json().refreshToken })).statusCode).toBe(200);
   });
 
-  it('deletes the account and everything with it', async () => {
-    const { accessToken } = (await post('/v1/auth/register', newUser('gone'))).json();
-    const del = await app.inject({ method: 'DELETE', url: '/v1/me', headers: { authorization: `Bearer ${accessToken}` } });
-    expect(del.statusCode).toBe(204);
-    expect((await post('/v1/auth/login', { email: 'gone@example.com', password: 'correct-horse-battery' })).statusCode).toBe(401);
-    expect((await app.inject({ method: 'GET', url: '/v1/me', headers: { authorization: `Bearer ${accessToken}` } })).statusCode).toBe(401);
+  it('deletes the account only with the typed word and the password', async () => {
+    const { accessToken } = (await call('POST', '/v1/auth/register', null, registerBody('gone'))).json();
+    expect((await call('POST', '/v1/me/delete', accessToken, { confirm: 'DELETE' })).statusCode).toBe(403); // password missing
+    expect((await call('POST', '/v1/me/delete', accessToken, { confirm: 'DELETE', password: 'wrong-password-1' })).statusCode).toBe(403);
+    expect((await call('POST', '/v1/me/delete', accessToken, { password: PASSWORD })).statusCode).toBe(400); // typed word missing
+    expect((await call('POST', '/v1/me/delete', accessToken, { confirm: 'DELETE', password: PASSWORD })).statusCode).toBe(204);
+    expect((await call('POST', '/v1/auth/login', null, { email: 'gone@example.com', password: PASSWORD })).statusCode).toBe(401);
+    expect((await call('GET', '/v1/me', accessToken)).statusCode).toBe(401);
+  });
+
+  it('edits the profile, and refuses a username that is taken', async () => {
+    const a = await signUpVerified(app, messenger, 'edita');
+    await signUpVerified(app, messenger, 'editb');
+    const ok = await call('PATCH', '/v1/me', a.token, { displayName: 'Anna', language: 'sw', country: 'ke' });
+    expect(ok.json()).toMatchObject({ displayName: 'Anna', language: 'sw', country: 'KE' });
+    expect((await call('PATCH', '/v1/me', a.token, { username: 'user_editb' })).statusCode).toBe(409);
   });
 });
 
 describe('artist side', () => {
-  const artist = (extra: object = {}) => ({
-    stageName: 'Nova Wave',
-    artistType: 'solo',
-    bio: 'Test artist',
-    rightsDeclaration: true,
-    agreementVersion: '2026-10',
-    ...extra,
-  });
-
-  it('upgrades a listener to an artist with both modes', async () => {
-    const { accessToken } = (await post('/v1/auth/register', newUser('art1'))).json();
-    const res = await post('/v1/artists/me', artist(), accessToken);
+  it('upgrades a verified listener to an artist with both modes', async () => {
+    const u = await signUpVerified(app, messenger, 'art1');
+    const res = await call('POST', '/v1/artists/me', u.token, artistBody({ genres: ['Afrobeats'], links: ['https://example.com/me'] }));
     expect(res.statusCode).toBe(201);
     expect(res.json().modes).toEqual(['listener', 'artist']);
-    expect(res.json().artist.verified).toBe(false);
-    expect((await post('/v1/artists/me', artist({ stageName: 'Second Name' }), accessToken)).statusCode).toBe(409);
+    expect(res.json().artist).toMatchObject({ verified: false, genres: ['afrobeats'] });
+    expect((await call('POST', '/v1/artists/me', u.token, artistBody({ stageName: 'Second Name' }))).statusCode).toBe(409);
   });
 
-  it('blocks a duplicate stage name in any letter case (impersonation guard)', async () => {
-    const { accessToken } = (await post('/v1/auth/register', newUser('art2'))).json();
-    expect((await post('/v1/artists/me', artist({ stageName: 'NOVA WAVE' }), accessToken)).statusCode).toBe(409);
+  it('blocks look-alike stage names (case, spaces and punctuation)', async () => {
+    const u = await signUpVerified(app, messenger, 'art2');
+    for (const name of ['NOVA WAVE', 'nova-wave', 'Nova  Wave!']) {
+      const res = await call('POST', '/v1/artists/me', u.token, artistBody({ stageName: name }));
+      expect(res.statusCode, name).toBe(409);
+      expect(res.json().error).toBe('stage_name_taken');
+    }
   });
 
-  it('requires the rights declaration', async () => {
-    const { accessToken } = (await post('/v1/auth/register', newUser('art3'))).json();
-    expect((await post('/v1/artists/me', artist({ stageName: 'No Rights', rightsDeclaration: false }), accessToken)).statusCode).toBe(400);
+  it('requires the rights declaration and a verified email or phone', async () => {
+    const u = await signUpVerified(app, messenger, 'art3');
+    expect((await call('POST', '/v1/artists/me', u.token, artistBody({ stageName: 'No Rights', rightsDeclaration: false }))).statusCode).toBe(400);
+    const raw = (await call('POST', '/v1/auth/register', null, registerBody('art4'))).json();
+    const res = await call('POST', '/v1/artists/me', raw.accessToken, artistBody({ stageName: 'Unverified Act' }));
+    expect(res.statusCode).toBe(403);
+    expect(res.json().error).toBe('verify_contact_first');
+  });
+
+  it('lets an artist update the bio, genres and links', async () => {
+    const u = await signUpVerified(app, messenger, 'art5');
+    await call('POST', '/v1/artists/me', u.token, artistBody({ stageName: 'Patch Act' }));
+    const res = await call('PATCH', '/v1/artists/me', u.token, { bio: 'New bio', genres: ['Hip-Hop'] });
+    expect(res.json().artist).toMatchObject({ bio: 'New bio', genres: ['hip-hop'] });
+    const listener = await signUpVerified(app, messenger, 'art6');
+    expect((await call('PATCH', '/v1/artists/me', listener.token, { bio: 'x' })).statusCode).toBe(404);
   });
 });
 
 describe('config', () => {
   it('ships with paywalls off', async () => {
-    const res = await app.inject({ method: 'GET', url: '/v1/config' });
+    const res = await call('GET', '/v1/config');
     expect(res.json().flags.payments_enforced).toBe(false);
     expect(res.json().flags.youtube_enabled).toBe(true);
   });

@@ -1,7 +1,11 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { buildApp, type AppDeps } from '../src/app.js';
 import { memoryDb } from '../src/db.js';
 import { MemoryMessenger } from '../src/messaging.js';
 import { migrate } from '../src/migrate.js';
+import { LocalDiskStorage } from '../src/storage.js';
 
 export type TestApp = Awaited<ReturnType<typeof buildApp>>;
 
@@ -9,8 +13,9 @@ export async function makeApp(extra: Partial<AppDeps> = {}) {
   const db = await memoryDb();
   await migrate(db);
   const messenger = new MemoryMessenger();
-  const app = await buildApp({ db, jwtSecret: 'x'.repeat(40), authRateLimit: 10_000, messenger, ...extra });
-  return { app, db, messenger };
+  const dir = mkdtempSync(join(tmpdir(), 'vyro-test-'));
+  const app = await buildApp({ db, jwtSecret: 'x'.repeat(40), authRateLimit: 10_000, messenger, storage: new LocalDiskStorage(dir), ...extra });
+  return { app, db, messenger, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 
 export const PASSWORD = 'correct-horse-battery';

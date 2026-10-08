@@ -12,7 +12,8 @@ class JustAudioDeck implements Deck {
 
   @override
   Future<void> load(Track track) async {
-    final uri = track.uri;
+    final resolver = track.resolveUri;
+    final uri = resolver != null ? await resolver() : track.uri;
     if (uri.scheme == 'file') {
       await _player.setFilePath(uri.toFilePath());
     } else {

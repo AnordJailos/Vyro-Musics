@@ -28,11 +28,6 @@ const listenEvent = z.object({
   mixedWithTrackId: z.uuid().optional(),
 });
 const listensBody = z.object({ events: z.array(listenEvent).min(1).max(100) });
-const trackBody = z.object({
-  title: z.string().trim().min(1).max(120),
-  genre: z.string().trim().toLowerCase().min(1).max(40).default('other'),
-  durationMs: z.number().int().min(1000).max(21_600_000),
-});
 const idParam = z.object({ id: z.uuid() });
 const artistRangeQuery = z.object({ range: z.enum(Object.keys(ARTIST_RANGES) as [string, ...string[]]).default('28d') });
 const listenerQuery = z.object({
@@ -80,27 +75,7 @@ export function registerStatsRoutes({ app, db, requireUser, now, minCohort }: De
     return reply.code(202).send({ accepted, ignored: parsed.data.events.length - accepted });
   });
 
-  // ---- artist: catalog records and statistics -----------------------------
-
-  app.post('/v1/artists/me/tracks', artistOnly, async (req, reply) => {
-    const parsed = trackBody.safeParse(req.body);
-    if (!parsed.success) return invalid(reply, parsed.error);
-    const b = parsed.data;
-    const row = (
-      await db.query<any>('insert into tracks (artist_id, title, genre, duration_ms) values ($1, $2, $3, $4) returning id, title, genre, duration_ms', [
-        req.userId,
-        b.title,
-        b.genre,
-        b.durationMs,
-      ])
-    ).rows[0];
-    return reply.code(201).send({ id: row.id, title: row.title, genre: row.genre, durationMs: row.duration_ms });
-  });
-
-  app.get('/v1/artists/me/tracks', artistOnly, async (req) => {
-    const rows = (await db.query<any>('select id, title, genre, duration_ms from tracks where artist_id = $1 order by created_at', [req.userId])).rows;
-    return { tracks: rows.map((r) => ({ id: r.id, title: r.title, genre: r.genre, durationMs: r.duration_ms })) };
-  });
+  // ---- artist statistics ---------------------------------------------------
 
   app.get('/v1/artists/me/stats', artistOnly, async (req, reply) => {
     const q = artistRangeQuery.safeParse(req.query);

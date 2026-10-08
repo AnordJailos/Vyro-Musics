@@ -33,6 +33,9 @@ class LibraryController extends ChangeNotifier {
   String? get message => _message;
   String get query => _query;
   bool get hasTracks => _tracks.isNotEmpty;
+
+  /// Every song, ignoring the Library tab's own search box.
+  List<LibraryTrack> get allTracks => _tracks;
   List<String> get roots => _roots;
   List<String> get excludedFolders => _excluded;
   bool isLiked(String id) => _liked.contains(id);

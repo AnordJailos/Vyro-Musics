@@ -1,15 +1,20 @@
+import { Readable } from 'node:stream';
 import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
 import rateLimit from '@fastify/rate-limit';
 import type { z } from 'zod';
 import { ageOn } from './age.js';
+import { FfmpegTranscoder, type Transcoder } from './audio.js';
 import { registerAuthRoutes } from './auth_routes.js';
+import { registerCatalogRoutes } from './catalog_routes.js';
 import type { Ctx } from './context.js';
 import type { Db } from './db.js';
 import { makeSocialVerifier, type SocialVerifier } from './idtokens.js';
 import { registerMeRoutes } from './me_routes.js';
 import { ConsoleMessenger, type Messenger } from './messaging.js';
 import { hashPassword, newRefreshToken, sha256, tokenKit } from './security.js';
+import { LocalDiskStorage, type Storage } from './storage.js';
 import { registerStatsRoutes } from './stats_routes.js';
+import { registerStudioRoutes } from './studio_routes.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -30,6 +35,12 @@ export interface AppDeps {
   messenger?: Messenger;
   /** Checks Google and Apple ID tokens. Defaults to "not configured". */
   social?: SocialVerifier;
+  /** Where uploaded files are kept. Defaults to the STORAGE_DIR folder (or ./data). */
+  storage?: Storage;
+  /** ffmpeg helper. Leave out to detect ffmpeg automatically, or pass null to switch it off. */
+  transcoder?: Transcoder | null;
+  /** Largest song upload accepted, in bytes. */
+  maxAudioBytes?: number;
 }
 
 const REFRESH_DAYS = 30;
@@ -39,6 +50,8 @@ export async function buildApp(deps: AppDeps) {
   const app = Fastify({ logger });
   await app.register(rateLimit, { global: false });
   app.decorateRequest('userId', null);
+  // Uploads arrive as the raw request body: keep them as a stream instead of loading them into memory.
+  app.addContentTypeParser(/^(audio|image)\/.+$|^application\/octet-stream$/, (_req, payload, done) => done(null, payload as Readable));
 
   const tokens = tokenKit(jwtSecret);
 
@@ -103,6 +116,11 @@ export async function buildApp(deps: AppDeps) {
     req.userId = userId;
   }
 
+  async function optionalUser(req: FastifyRequest) {
+    const header = req.headers.authorization ?? '';
+    req.userId = header.startsWith('Bearer ') ? await tokens.verifyAccess(header.slice(7)) : null;
+  }
+
   const ctx: Ctx = {
     app,
     db,
@@ -118,6 +136,10 @@ export async function buildApp(deps: AppDeps) {
     issueTokens,
     loadMe,
     requireUser,
+    optionalUser,
+    storage: deps.storage ?? new LocalDiskStorage(process.env.STORAGE_DIR ?? './data'),
+    transcoder: deps.transcoder === undefined ? await FfmpegTranscoder.detect() : deps.transcoder,
+    maxAudioBytes: deps.maxAudioBytes ?? 300 * 1024 * 1024,
   };
 
   app.get('/health', async () => ({ status: 'ok' }));
@@ -128,6 +150,8 @@ export async function buildApp(deps: AppDeps) {
 
   registerAuthRoutes(ctx);
   registerMeRoutes(ctx);
+  registerStudioRoutes(ctx);
+  registerCatalogRoutes(ctx);
   registerStatsRoutes({ app, db, requireUser, now, minCohort });
 
   return app;

@@ -11,11 +11,13 @@ import 'audio/audio_handler.dart';
 import 'audio/just_audio_deck.dart';
 import 'audio/playback_controller.dart';
 import 'auth/api_client.dart';
+import 'auth/api_errors.dart';
 import 'auth/auth_api.dart';
 import 'auth/auth_controller.dart';
 import 'auth/screens/auth_gate.dart';
 import 'auth/social_sign_in.dart';
 import 'auth/token_store.dart';
+import 'catalog/catalog_api.dart';
 import 'library/device_library_platform.dart';
 import 'library/library_controller.dart';
 import 'library/library_models.dart' show TagInfo;
@@ -26,6 +28,8 @@ import 'shell/app_shell.dart';
 import 'stats/api_stats_repository.dart';
 import 'stats/demo_stats_repository.dart';
 import 'stats/models.dart';
+import 'studio/file_picker_service.dart';
+import 'studio/studio_api.dart';
 import 'theme/theme_controller.dart';
 
 Future<void> main() async {
@@ -37,7 +41,11 @@ Future<void> main() async {
   // just_audio's native players.
   if (desktopBackend) JustAudioMediaKit.ensureInitialized();
 
-  final playback = PlaybackController(deckA: JustAudioDeck(), deckB: JustAudioDeck());
+  final playback = PlaybackController(
+    deckA: JustAudioDeck(),
+    deckB: JustAudioDeck(),
+    describeError: (e) => e is ApiException ? e.message : 'Could not play that song.',
+  );
 
   // Background playback, notification, lock screen and headset buttons.
   // (Windows media keys are a separate step.)
@@ -79,6 +87,9 @@ Future<void> main() async {
     auth: auth,
     stats: ApiStatsRepository(client),
     social: const UnconfiguredSocialSignIn(),
+    catalog: HttpCatalogApi(client),
+    studio: HttpStudioApi(client),
+    picker: const DeviceFilePickerService(),
   ));
 }
 
@@ -90,6 +101,9 @@ class VyroApp extends StatefulWidget {
     LibraryController? library,
     AuthController? auth,
     this.social = const UnconfiguredSocialSignIn(),
+    this.catalog = const EmptyCatalogApi(),
+    this.studio = const OfflineStudioApi(),
+    this.picker = const NoFilePickerService(),
   })  : stats = stats ?? DemoStatsRepository(),
         library = library ?? LibraryController(store: MemoryLibraryStore(), scanner: LibraryScanner(readTags: _noTags)),
         auth = auth ?? (AuthController(api: const OfflineAuthApi(), store: MemoryTokenStore())..continueAsGuest());
@@ -101,6 +115,9 @@ class VyroApp extends StatefulWidget {
   final LibraryController library;
   final AuthController auth;
   final SocialSignIn social;
+  final CatalogApi catalog;
+  final StudioApi studio;
+  final FilePickerService picker;
 
   @override
   State<VyroApp> createState() => _VyroAppState();
@@ -130,7 +147,16 @@ class _VyroAppState extends State<VyroApp> {
         home: AuthGate(
           auth: widget.auth,
           social: widget.social,
-          appBuilder: (_) => AppShell(theme: _theme, playback: widget.playback, stats: widget.stats, library: widget.library, auth: widget.auth),
+          appBuilder: (_) => AppShell(
+            theme: _theme,
+            playback: widget.playback,
+            stats: widget.stats,
+            library: widget.library,
+            auth: widget.auth,
+            catalog: widget.catalog,
+            studio: widget.studio,
+            picker: widget.picker,
+          ),
         ),
       ),
     );

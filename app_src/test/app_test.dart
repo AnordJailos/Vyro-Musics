@@ -60,6 +60,7 @@ void main() {
 
   testWidgets('tapping a demo song shows the mini player', (tester) async {
     await tester.pumpWidget(_app(_guest()));
+    await tester.scrollUntilVisible(find.text('Demo song 2'), 300);
     await tester.tap(find.text('Demo song 2'));
     await tester.pump();
     await tester.pump();
@@ -72,6 +73,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Minutes listened'), findsOneWidget);
     expect(find.text('@amani'), findsOneWidget);
+  });
+
+  testWidgets('an artist reaches the Studio upload and the Releases list', (tester) async {
+    await tester.pumpWidget(_app(await signedIn(FakeAuthApi(user: testUser(artist: true)))));
+    await tester.tap(find.byTooltip('Switch to Artist Studio'));
+    await tester.pumpAndSettle();
+    expect(find.text('Upload a song'), findsOneWidget);
+    await tester.tap(find.text('Releases'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('could not'), findsNothing);
+  });
+
+  testWidgets('Search works for a guest', (tester) async {
+    await tester.pumpWidget(_app(_guest()));
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('one place'), findsOneWidget);
   });
 
   testWidgets('a guest sees an invitation instead of a profile', (tester) async {

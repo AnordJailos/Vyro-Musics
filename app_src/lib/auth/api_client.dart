@@ -72,5 +72,49 @@ class ApiClient {
     throw ApiException(r.statusCode, code);
   }
 
+  /// Sends a file as the request body without loading it into memory, and reports progress.
+  /// [open] is called again if the request has to be retried after a token refresh.
+  Future<Object?> upload(
+    String path, {
+    required Stream<List<int>> Function() open,
+    required int length,
+    required String contentType,
+    void Function(int sent, int total)? onProgress,
+  }) async {
+    http.Response response = await _uploadOnce(path, open, length, contentType, onProgress);
+    if (response.statusCode == 401) {
+      final refresh = session.onUnauthorized;
+      if (refresh != null && await refresh()) response = await _uploadOnce(path, open, length, contentType, onProgress);
+    }
+    return _decode(response);
+  }
+
+  Future<http.Response> _uploadOnce(String path, Stream<List<int>> Function() open, int length, String contentType, void Function(int, int)? onProgress) async {
+    final request = http.StreamedRequest('PUT', baseUrl.replace(path: path))
+      ..headers['accept'] = 'application/json'
+      ..headers['content-type'] = contentType
+      ..contentLength = length;
+    final token = session.accessToken;
+    if (token != null) request.headers['authorization'] = 'Bearer $token';
+    var sent = 0;
+    final body = open().map((chunk) {
+      sent += chunk.length;
+      onProgress?.call(sent, length);
+      return chunk;
+    });
+    // addStream honours back-pressure, so a large file is read only as fast as it is sent.
+    request.sink.addStream(body).then<void>((_) => request.sink.close()).catchError((Object _) => request.sink.close());
+    try {
+      final streamed = await _client.send(request).timeout(const Duration(minutes: 30));
+      return await http.Response.fromStream(streamed);
+    } on TimeoutException {
+      throw const ApiException(0, 'network');
+    } on IOException {
+      throw const ApiException(0, 'network');
+    } on http.ClientException {
+      throw const ApiException(0, 'network');
+    }
+  }
+
   void close() => _client.close();
 }

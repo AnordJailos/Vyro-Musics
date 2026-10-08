@@ -164,5 +164,5 @@ class OfflineAuthApi implements AuthApi {
   const OfflineAuthApi();
 
   @override
-  dynamic noSuchMethod(Invocation invocation) => throw const ApiException(0, 'network');
+  dynamic noSuchMethod(Invocation invocation) => Future<Never>.error(const ApiException(0, 'network'));
 }

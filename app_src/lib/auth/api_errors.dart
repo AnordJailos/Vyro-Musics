@@ -67,6 +67,26 @@ String describeError(String code) {
     case 'unauthorized':
     case 'invalid_refresh_token':
       return 'Please log in again.';
+    case 'unsupported_audio':
+      return 'That file is not a supported audio file. Use MP3, M4A, FLAC, WAV, OGG or AIFF.';
+    case 'too_short':
+      return 'Songs must be at least 10 seconds long.';
+    case 'too_long':
+      return 'That file is longer than 6 hours.';
+    case 'bitrate_too_low':
+      return 'The audio quality is too low. Upload at 128 kbps or better, or a lossless file.';
+    case 'sample_rate_too_low':
+      return 'The sample rate is too low. Use at least 22.05 kHz.';
+    case 'file_too_large':
+      return 'That file is too large.';
+    case 'unsupported_image':
+      return 'The cover must be a JPEG, PNG or WebP picture.';
+    case 'upload_audio_first':
+      return 'Upload the audio before publishing.';
+    case 'explicit_not_allowed':
+      return 'This song is marked explicit, and explicit content is turned off for your account.';
+    case 'not_found':
+      return 'That could not be found.';
     case 'invalid_request':
       return 'Please check what you entered.';
     default:

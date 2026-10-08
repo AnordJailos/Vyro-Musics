@@ -7,12 +7,18 @@ import '../auth/screens/account_page.dart';
 import '../auth/screens/artist_upgrade_page.dart';
 import '../auth/screens/guest_prompt.dart';
 import '../brand/vyro_mark.dart';
+import '../catalog/catalog_api.dart';
+import '../catalog/search_page.dart';
 import '../library/library_controller.dart';
 import '../library/library_page.dart';
 import '../stats/artist_stats_page.dart';
 import '../stats/demo_stats_repository.dart';
 import '../stats/listener_profile_page.dart';
 import '../stats/models.dart';
+import '../studio/file_picker_service.dart';
+import '../studio/releases_page.dart';
+import '../studio/studio_api.dart';
+import '../studio/studio_page.dart';
 import '../theme/theme_controller.dart';
 import 'pages.dart';
 import 'player_ui.dart';
@@ -48,6 +54,9 @@ class AppShell extends StatefulWidget {
     required this.stats,
     required this.library,
     required this.auth,
+    required this.catalog,
+    required this.studio,
+    required this.picker,
   });
 
   final ThemeController theme;
@@ -57,6 +66,9 @@ class AppShell extends StatefulWidget {
   final StatsRepository stats;
   final LibraryController library;
   final AuthController auth;
+  final CatalogApi catalog;
+  final StudioApi studio;
+  final FilePickerService picker;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -66,6 +78,26 @@ class _AppShellState extends State<AppShell> {
   int _index = 0;
   bool _artistMode = false;
   final StatsRepository _demoStats = DemoStatsRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    widget.playback.addListener(_onPlayback);
+  }
+
+  @override
+  void dispose() {
+    widget.playback.removeListener(_onPlayback);
+    super.dispose();
+  }
+
+  // A song that cannot be played (for example no connection) is explained in a message, once.
+  void _onPlayback() {
+    final message = widget.playback.error;
+    if (message == null || !mounted) return;
+    widget.playback.clearError();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
 
   AuthController get _auth => widget.auth;
   StatsRepository get _stats => _auth.isSignedIn ? widget.stats : _demoStats;
@@ -78,7 +110,13 @@ class _AppShellState extends State<AppShell> {
     final user = _auth.user;
     switch (tab.label) {
       case 'Home':
-        return HomePage(controller: widget.playback);
+        return HomePage(controller: widget.playback, catalog: widget.catalog);
+      case 'Search':
+        return SearchPage(catalog: widget.catalog, library: widget.library, playback: widget.playback);
+      case 'Studio':
+        return StudioPage(studio: widget.studio, picker: widget.picker);
+      case 'Releases':
+        return ReleasesPage(studio: widget.studio);
       case 'Library':
         return LibraryPage(library: widget.library, playback: widget.playback);
       case 'Profile':

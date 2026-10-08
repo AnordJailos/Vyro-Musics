@@ -1,4 +1,4 @@
-import { createHash, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import { SignJWT, jwtVerify } from 'jose';
 
@@ -56,4 +56,22 @@ export function tokenKit(secret: string) {
       }
     },
   };
+}
+
+/** Short-lived, tamper-proof address for a song's audio: `trackId.expiry.signature`. */
+export function signStreamToken(secret: string, trackId: string, expiresAtSeconds: number): string {
+  const body = `${trackId}.${expiresAtSeconds}`;
+  return `${body}.${createHmac('sha256', secret).update(`stream|${body}`).digest('base64url')}`;
+}
+
+export function verifyStreamToken(secret: string, token: string, nowSeconds: number): { trackId: string } | null {
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [trackId, exp, sig] = parts as [string, string, string];
+  const expected = createHmac('sha256', secret).update(`stream|${trackId}.${exp}`).digest('base64url');
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  if (!Number.isFinite(Number(exp)) || Number(exp) <= nowSeconds) return null;
+  return { trackId };
 }

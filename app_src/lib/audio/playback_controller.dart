@@ -18,6 +18,7 @@ class PlaybackController extends ChangeNotifier {
     required Deck deckA,
     required Deck deckB,
     this.tickInterval = const Duration(milliseconds: 20),
+    this.describeError,
   }) : _decks = [deckA, deckB] {
     for (var i = 0; i < 2; i++) {
       _subs.add(_decks[i].positionStream.listen((p) => _onPosition(i, p)));
@@ -31,6 +32,9 @@ class PlaybackController extends ChangeNotifier {
   static const Duration _restartThreshold = Duration(seconds: 3);
 
   final Duration tickInterval;
+
+  /// Turns a failure (for example no connection) into a message for the person.
+  final String Function(Object error)? describeError;
   final List<Deck> _decks;
   final List<StreamSubscription<Object?>> _subs = [];
 
@@ -206,7 +210,7 @@ class PlaybackController extends ChangeNotifier {
       try {
         await job();
       } catch (e) {
-        _error = '$e';
+        _error = describeError?.call(e) ?? 'Could not play that song.';
         notifyListeners();
       }
     });

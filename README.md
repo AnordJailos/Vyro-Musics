@@ -17,7 +17,7 @@ Needs Node 22+ and PostgreSQL (use the current stable release).
 ```bash
 cd server
 npm install
-npm test                      # 50 tests, run on an in-memory Postgres
+npm test                      # 70 tests, run on an in-memory Postgres
 export DATABASE_URL=postgres://user:pass@localhost:5432/vyro
 export JWT_SECRET=$(openssl rand -hex 32)
 npm run dev
@@ -89,6 +89,25 @@ cannot join, 13 to 15 need a parent's emailed code, explicit content stays off u
   agreement (the screens show placeholders). The age limits are a starting point and need legal review per market.
 - **Saved login**: held in the system's secure storage. If a platform refuses it, the app keeps working and the
   person simply logs in again next launch. Without a connection the app opens with the last saved profile.
+
+## Catalog and Studio
+
+Artists upload songs; listeners search and stream them; the mix engine can blend them.
+
+- **Studio** (artist mode): upload a song (MP3, M4A, FLAC, WAV, OGG or AIFF, up to 300 MB), add a cover, set genre,
+  explicit and "allow blending", then publish. The **Releases** tab lists your songs with Publish, Take offline and
+  Delete. Removing a song deletes its files, but past plays still count in your statistics.
+- **Listeners** (guests included): **Home** shows New on Vyro and Top this week; **Search** looks through Vyro and the
+  music on the device together, each result labelled by where it lives.
+- **Quality checks at upload**: at least 10 seconds; lossy files at 128 kbps or better; lossless at 22.05 kHz or better.
+- **Streaming**: each play asks the server for a short-lived signed address (one hour), and the audio is served with
+  byte ranges so seeking and fast starts work. Explicit songs are hidden from guests and anyone with explicit content off.
+- **Server settings**: `STORAGE_DIR` (where files are kept, default `./data`) and, optionally, `FFMPEG_PATH`.
+  With ffmpeg installed the server measures loudness (EBU R128) and makes a smaller AAC copy of lossless uploads to
+  stream; without it, files are streamed as uploaded.
+- **Not built yet**: review of uploads before they go live (**songs publish immediately, so do not open uploads to the
+  public until the admin review and copyright check exist**), resumable uploads, albums and releases, adaptive
+  bitrates, and S3-style storage with a CDN (the storage layer is ready for it).
 
 ## Statistics
 

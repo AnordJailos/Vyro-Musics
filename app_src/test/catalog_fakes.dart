@@ -52,8 +52,12 @@ class FakeCatalogApi implements CatalogApi {
 
 class FakeStudioApi implements StudioApi {
   final tracks = <StudioTrack>[];
+  final notices = <TakedownInfo>[];
   final calls = <String>[];
   Object? failNextUpload;
+
+  /// What the server decides when a song is submitted: in_review, held or published.
+  String publishStatus = 'in_review';
   var _n = 0;
 
   StudioTrack _set(String id, StudioTrack Function(StudioTrack t) change) {
@@ -62,7 +66,7 @@ class FakeStudioApi implements StudioApi {
     return tracks[i];
   }
 
-  StudioTrack _copy(StudioTrack t, {String? status, bool? hasAudio, bool? hasCover}) => StudioTrack(
+  StudioTrack _copy(StudioTrack t, {String? status, bool? hasAudio, bool? hasCover, String? rejectReason}) => StudioTrack(
         id: t.id,
         title: t.title,
         status: status ?? t.status,
@@ -75,6 +79,7 @@ class FakeStudioApi implements StudioApi {
         codec: hasAudio == true ? 'mp3' : t.codec,
         bitrateKbps: hasAudio == true ? 192 : t.bitrateKbps,
         loudnessLufs: hasAudio == true ? -14.2 : t.loudnessLufs,
+        rejectReason: rejectReason ?? t.rejectReason,
       );
 
   @override
@@ -109,7 +114,7 @@ class FakeStudioApi implements StudioApi {
   @override
   Future<StudioTrack> publish(String trackId) async {
     calls.add('publish');
-    return _set(trackId, (t) => _copy(t, status: 'published'));
+    return _set(trackId, (t) => _copy(t, status: publishStatus));
   }
 
   @override
@@ -122,6 +127,24 @@ class FakeStudioApi implements StudioApi {
   Future<void> deleteTrack(String trackId) async {
     calls.add('deleteTrack');
     tracks.removeWhere((t) => t.id == trackId);
+  }
+
+  @override
+  Future<List<TakedownInfo>> takedowns() async => List.of(notices);
+
+  @override
+  Future<void> counterNotice(String noticeId, {required String statement, required String signature}) async {
+    calls.add('counterNotice');
+    final i = notices.indexWhere((n) => n.id == noticeId);
+    final n = notices[i];
+    notices[i] = TakedownInfo(id: n.id, status: 'counter_filed', trackId: n.trackId, trackTitle: n.trackTitle, claimantName: n.claimantName, statement: n.statement);
+  }
+
+  /// Puts a song in a given state, as if the server had decided it.
+  StudioTrack seed(String id, String title, String status, {bool hasAudio = true, String? rejectReason}) {
+    final t = StudioTrack(id: id, title: title, status: status, hasAudio: hasAudio, durationMs: hasAudio ? 180000 : 0, rejectReason: rejectReason);
+    tracks.add(t);
+    return t;
   }
 }
 

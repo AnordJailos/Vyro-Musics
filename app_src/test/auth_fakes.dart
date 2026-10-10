@@ -4,7 +4,7 @@ import 'package:vyro_music/auth/auth_controller.dart';
 import 'package:vyro_music/auth/auth_models.dart';
 import 'package:vyro_music/auth/token_store.dart';
 
-UserProfile testUser({bool artist = false, bool tasteSet = true, bool emailVerified = true, String parentConsent = 'not_needed', bool isMinor = false}) => UserProfile(
+UserProfile testUser({bool artist = false, bool tasteSet = true, bool emailVerified = true, String parentConsent = 'not_needed', bool isMinor = false, String role = 'user'}) => UserProfile(
       id: 'u1',
       displayName: 'Amani',
       username: 'amani',
@@ -14,6 +14,7 @@ UserProfile testUser({bool artist = false, bool tasteSet = true, bool emailVerif
       parentConsent: parentConsent,
       isMinor: isMinor,
       artist: artist ? const ArtistInfo(stageName: 'Amani Beats') : null,
+      role: role,
     );
 
 /// A server that answers from memory and remembers what it was asked.

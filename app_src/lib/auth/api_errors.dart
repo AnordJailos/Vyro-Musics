@@ -85,6 +85,24 @@ String describeError(String code) {
       return 'Upload the audio before publishing.';
     case 'explicit_not_allowed':
       return 'This song is marked explicit, and explicit content is turned off for your account.';
+    case 'taken_down':
+      return 'This song was taken down after a copyright notice.';
+    case 'already_submitted':
+      return 'This song is already waiting for review.';
+    case 'account_suspended':
+      return 'This account has been suspended.';
+    case 'staff_only':
+      return 'Only staff can do that.';
+    case 'reason_required':
+      return 'Choose a reason first.';
+    case 'not_waiting_for_review':
+      return 'That song is no longer waiting for review.';
+    case 'already_resolved':
+      return 'That notice has already been decided.';
+    case 'cannot_counter_now':
+      return 'A counter-notice cannot be sent for this notice.';
+    case 'cannot_suspend_staff':
+      return 'Staff accounts cannot be suspended here.';
     case 'not_found':
       return 'That could not be found.';
     case 'invalid_request':

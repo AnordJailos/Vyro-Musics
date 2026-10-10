@@ -5,7 +5,12 @@ import type { z } from 'zod';
 import { ageOn } from './age.js';
 import { FfmpegTranscoder, type Transcoder } from './audio.js';
 import { registerAuthRoutes } from './auth_routes.js';
+import { registerAdminRoutes } from './admin_routes.js';
 import { registerCatalogRoutes } from './catalog_routes.js';
+import type { CopyrightChecker } from './copyright.js';
+import { detectFingerprintTool, type FingerprintTool } from './fingerprint.js';
+import type { ReviewPolicy } from './review.js';
+import { registerTakedownRoutes } from './takedown_routes.js';
 import type { Ctx } from './context.js';
 import type { Db } from './db.js';
 import { makeSocialVerifier, type SocialVerifier } from './idtokens.js';
@@ -41,6 +46,14 @@ export interface AppDeps {
   transcoder?: Transcoder | null;
   /** Largest song upload accepted, in bytes. */
   maxAudioBytes?: number;
+  /** Fingerprint tool. Leave out to detect fpcalc or ffmpeg automatically, or pass null to switch it off. */
+  fingerprint?: FingerprintTool | null;
+  /** Lookup against released music. Off by default. */
+  copyright?: CopyrightChecker | null;
+  /** 'all' (default): every song is reviewed first. 'new_artists': trusted artists skip review. 'none': clean songs go live. */
+  reviewPolicy?: ReviewPolicy;
+  /** Copyright notices one address may send per hour (default 5). */
+  noticeRateLimit?: number;
 }
 
 const REFRESH_DAYS = 30;
@@ -65,7 +78,7 @@ export async function buildApp(deps: AppDeps) {
   async function loadMe(userId: string) {
     const u = (
       await db.query<any>(
-        `select id, email, phone, display_name, username, country, language, created_at,
+        `select id, email, phone, display_name, username, country, language, created_at, role,
                 to_char(birth_date, 'YYYY-MM-DD') as birth_date,
                 email_verified_at, phone_verified_at, explicit_allowed, parent_consent,
                 private_session, hide_activity, share_listening, personalization,
@@ -89,6 +102,7 @@ export async function buildApp(deps: AppDeps) {
       country: u.country,
       language: u.language,
       createdAt: u.created_at,
+      role: u.role,
       emailVerified: u.email_verified_at != null,
       phoneVerified: u.phone_verified_at != null,
       hasPassword: u.has_password,
@@ -113,6 +127,9 @@ export async function buildApp(deps: AppDeps) {
     const header = req.headers.authorization ?? '';
     const userId = header.startsWith('Bearer ') ? await tokens.verifyAccess(header.slice(7)) : null;
     if (!userId) return reply.code(401).send({ error: 'unauthorized' });
+    const row = (await db.query<{ suspended_at: unknown }>('select suspended_at from users where id = $1', [userId])).rows[0];
+    if (!row) return reply.code(401).send({ error: 'unauthorized' });
+    if (row.suspended_at) return reply.code(403).send({ error: 'account_suspended' });
     req.userId = userId;
   }
 
@@ -140,6 +157,10 @@ export async function buildApp(deps: AppDeps) {
     storage: deps.storage ?? new LocalDiskStorage(process.env.STORAGE_DIR ?? './data'),
     transcoder: deps.transcoder === undefined ? await FfmpegTranscoder.detect() : deps.transcoder,
     maxAudioBytes: deps.maxAudioBytes ?? 300 * 1024 * 1024,
+    fingerprint: deps.fingerprint === undefined ? await detectFingerprintTool() : deps.fingerprint,
+    copyright: deps.copyright ?? null,
+    reviewPolicy: deps.reviewPolicy ?? 'all',
+    noticeRateLimit: deps.noticeRateLimit ?? 5,
   };
 
   app.get('/health', async () => ({ status: 'ok' }));
@@ -151,6 +172,8 @@ export async function buildApp(deps: AppDeps) {
   registerAuthRoutes(ctx);
   registerMeRoutes(ctx);
   registerStudioRoutes(ctx);
+  registerAdminRoutes(ctx);
+  registerTakedownRoutes(ctx);
   registerCatalogRoutes(ctx);
   registerStatsRoutes({ app, db, requireUser, now, minCohort });
 

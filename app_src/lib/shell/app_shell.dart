@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../admin/admin_api.dart';
 import '../audio/playback_controller.dart';
 import '../auth/auth_controller.dart';
 import '../auth/screens/account_banners.dart';
@@ -57,6 +58,7 @@ class AppShell extends StatefulWidget {
     required this.catalog,
     required this.studio,
     required this.picker,
+    required this.admin,
   });
 
   final ThemeController theme;
@@ -69,6 +71,7 @@ class AppShell extends StatefulWidget {
   final CatalogApi catalog;
   final StudioApi studio;
   final FilePickerService picker;
+  final AdminApi admin;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -103,7 +106,7 @@ class _AppShellState extends State<AppShell> {
   StatsRepository get _stats => _auth.isSignedIn ? widget.stats : _demoStats;
 
   void _openAccount() {
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AccountPage(auth: _auth)));
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AccountPage(auth: _auth, admin: widget.admin, playback: widget.playback)));
   }
 
   Widget _page(_Tab tab) {

@@ -3,7 +3,10 @@ import type { z } from 'zod';
 import type { Db } from './db.js';
 import type { SocialVerifier } from './idtokens.js';
 import type { Transcoder } from './audio.js';
+import type { CopyrightChecker } from './copyright.js';
+import type { FingerprintTool } from './fingerprint.js';
 import type { Messenger } from './messaging.js';
+import type { ReviewPolicy } from './review.js';
 import type { tokenKit } from './security.js';
 import type { Storage } from './storage.js';
 
@@ -31,4 +34,12 @@ export interface Ctx {
   /** ffmpeg, when available: streaming copies and loudness measurement. */
   transcoder: Transcoder | null;
   maxAudioBytes: number;
+  /** Chromaprint, when available: finds songs that sound like ones already uploaded. */
+  fingerprint: FingerprintTool | null;
+  /** Optional lookup against released music. */
+  copyright: CopyrightChecker | null;
+  /** Which songs a person must review before they go live. */
+  reviewPolicy: ReviewPolicy;
+  /** How many copyright notices one address may send per hour. */
+  noticeRateLimit: number;
 }

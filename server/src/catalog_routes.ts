@@ -15,6 +15,9 @@ const chartQuery = z.object({
 
 const STREAM_MINUTES = 60;
 
+/** A song is visible to the public when it is published and its artist is not suspended. */
+const LIVE = "t.status = 'published' and not exists (select 1 from users su where su.id = t.artist_id and su.suspended_at is not null)";
+
 /** Reads "bytes=a-b", "bytes=a-" or "bytes=-n". */
 export function parseRange(header: string | undefined, size: number): { start: number; end: number } | 'invalid' | null {
   if (!header) return null;
@@ -53,7 +56,7 @@ export function registerCatalogRoutes(ctx: Ctx) {
     const rows = (
       await db.query<any>(
         `select ${PUBLIC_COLUMNS} from tracks t join artist_profiles ap on ap.user_id = t.artist_id
-         where t.status = 'published' and ($1::boolean or not t.explicit) order by t.published_at desc limit $2`,
+         where ${LIVE} and ($1::boolean or not t.explicit) order by t.published_at desc limit $2`,
         [await explicitAllowed(req.userId), q.data.limit],
       )
     ).rows;
@@ -67,7 +70,7 @@ export function registerCatalogRoutes(ctx: Ctx) {
     const rows = (
       await db.query<any>(
         `select ${PUBLIC_COLUMNS} from tracks t join artist_profiles ap on ap.user_id = t.artist_id
-         where t.status = 'published' and ($1::boolean or not t.explicit)
+         where ${LIVE} and ($1::boolean or not t.explicit)
            and (t.title ilike $2 escape '\\' or ap.stage_name ilike $2 escape '\\')
          order by (t.title ilike $3 escape '\\') desc, (ap.stage_name ilike $3 escape '\\') desc, t.published_at desc limit $4`,
         [await explicitAllowed(req.userId), `%${escaped}%`, `${escaped}%`, q.data.limit],
@@ -89,7 +92,7 @@ export function registerCatalogRoutes(ctx: Ctx) {
          from tracks t join artist_profiles ap on ap.user_id = t.artist_id
          left join listen_events e on e.track_id = t.id and e.valid and e.started_at >= $2::timestamptz and e.started_at < $3::timestamptz
               and ($4::text is null or e.country = $4)
-         where t.status = 'published' and ($1::boolean or not t.explicit)
+         where ${LIVE} and ($1::boolean or not t.explicit)
          group by t.id, ap.user_id, ap.stage_name
          order by plays desc, t.published_at desc limit $5`,
         [await explicitAllowed(req.userId), start.toISOString(), end.toISOString(), q.data.country?.toUpperCase() ?? null, q.data.limit],
@@ -99,9 +102,17 @@ export function registerCatalogRoutes(ctx: Ctx) {
   });
 
   async function visibleTrack(id: string, userId: string | null) {
-    const r = (await db.query<any>(`select ${PUBLIC_COLUMNS}, t.status, t.artist_id as owner_id from tracks t join artist_profiles ap on ap.user_id = t.artist_id where t.id = $1`, [id])).rows[0];
+    const r = (
+      await db.query<any>(
+        `select ${PUBLIC_COLUMNS}, t.status, t.artist_id as owner_id,
+                exists (select 1 from users su where su.id = t.artist_id and su.suspended_at is not null) as owner_suspended
+         from tracks t join artist_profiles ap on ap.user_id = t.artist_id where t.id = $1`,
+        [id],
+      )
+    ).rows[0];
     if (!r || r.status === 'removed') return null;
-    if (r.status !== 'published' && r.owner_id !== userId) return null; // drafts are only visible to their artist
+    if (r.status !== 'published' && r.owner_id !== userId) return null; // drafts and songs under review are only visible to their artist
+    if (r.status === 'published' && r.owner_suspended && r.owner_id !== userId) return null;
     return r;
   }
 
@@ -144,11 +155,18 @@ export function registerCatalogRoutes(ctx: Ctx) {
     const ok = verifyStreamToken(secret, token, Math.floor(now().getTime() / 1000));
     if (!ok) return reply.code(403).send({ error: 'invalid_or_expired' });
     const row = (
-      await db.query<any>('select status, audio_key, audio_mime, stream_key, stream_mime from tracks where id = $1', [ok.trackId])
+      await db.query<any>(
+        `select t.status, t.audio_key, t.audio_mime, t.stream_key, t.stream_mime,
+                exists (select 1 from users su where su.id = t.artist_id and su.suspended_at is not null) as owner_suspended
+         from tracks t where t.id = $1`,
+        [ok.trackId],
+      )
     ).rows[0];
     const key = row?.stream_key ?? row?.audio_key;
     const mime = row?.stream_key ? row.stream_mime : row?.audio_mime;
-    if (!row || row.status === 'removed' || !key) return reply.code(404).send({ error: 'not_found' });
+    // A takedown stops playback at once, even for addresses that have not expired yet.
+    const blocked = !row || row.status === 'removed' || row.status === 'taken_down' || (row.status === 'published' && row.owner_suspended);
+    if (blocked || !key) return reply.code(404).send({ error: 'not_found' });
     const size = await storage.size(key);
     if (size === null) return reply.code(404).send({ error: 'not_found' });
 

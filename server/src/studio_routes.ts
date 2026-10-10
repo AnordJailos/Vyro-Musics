@@ -6,6 +6,9 @@ import { randomUUID } from 'node:crypto';
 import { Readable, Transform } from 'node:stream';
 import { z } from 'zod';
 import { inspectAudio, qualityProblem } from './audio.js';
+import { deleteFingerprint, storeFingerprint } from './fingerprint.js';
+import { audit } from './notify.js';
+import { decideStatus, runChecks } from './review.js';
 import type { Ctx } from './context.js';
 import { OWNER_COLUMNS, ownerView } from './track_views.js';
 
@@ -121,6 +124,7 @@ export function registerStudioRoutes(ctx: Ctx) {
     if (!p.success) return invalid(reply, p.error);
     const t = await owned(p.data.id, req.userId);
     if (!t || t.status === 'removed') return reply.code(404).send({ error: 'not_found' });
+    if (t.status === 'taken_down') return reply.code(409).send({ error: 'taken_down' });
     if (!(req.body instanceof Readable)) return reply.code(415).send({ error: 'send_the_file_as_the_request_body' });
 
     const stamp = now().getTime();
@@ -162,13 +166,20 @@ export function registerStudioRoutes(ctx: Ctx) {
       }
     }
 
+    // Fingerprint the audio so later uploads can be compared with it.
+    let fingerprint: number[] | null = null;
+    if (ctx.fingerprint) fingerprint = await storage.withLocalFile(masterKey, (path) => ctx.fingerprint!.raw(path).catch(() => null));
+
     const masterBytes = (await storage.size(masterKey)) ?? 0;
     await db.query(
       `update tracks set audio_key = $2, audio_mime = $3, audio_bytes = $4, stream_key = $5, stream_mime = $6, stream_bytes = $7,
               codec = $8, bitrate_kbps = $9, sample_rate = $10, lossless = $11, loudness_lufs = $12, duration_ms = $13,
-              status = case when status = 'published' then 'published' else 'ready' end where id = $1`,
+              status = 'ready', submitted_at = null, reviewed_at = null, reviewed_by = null, reject_reason = null, review_note = null, checks = '{}'::jsonb
+       where id = $1`,
       [t.id, masterKey, info.mime, masterBytes, stream?.key ?? null, stream?.mime ?? null, stream?.bytes ?? null, info.codec, info.bitrateKbps, info.sampleRate, info.lossless, loudness, info.durationMs],
     );
+    if (fingerprint) await storeFingerprint(db, t.id, fingerprint, Math.round(info.durationMs / 1000), now());
+    else await deleteFingerprint(db, t.id);
     for (const old of [t.audio_key, t.stream_key]) if (old) await storage.delete(old);
     return view(t.id);
   });
@@ -197,13 +208,28 @@ export function registerStudioRoutes(ctx: Ctx) {
     return view(t.id);
   });
 
+  // "Publish" asks for release. The song is checked (does it sound like something already on Vyro, or like
+  // released music?) and then goes live, or waits for a person to review it, depending on the review policy.
   app.post('/v1/artists/me/tracks/:id/publish', artistOnly, async (req, reply) => {
     const p = idParam.safeParse(req.params);
     if (!p.success) return invalid(reply, p.error);
-    const t = await owned(p.data.id, req.userId);
+    const t = (await db.query<any>('select id, artist_id, status, audio_key, duration_ms from tracks where id = $1 and artist_id = $2', [p.data.id, req.userId])).rows[0];
     if (!t || t.status === 'removed') return reply.code(404).send({ error: 'not_found' });
     if (!t.audio_key) return reply.code(409).send({ error: 'upload_audio_first' });
-    await db.query("update tracks set status = 'published', published_at = coalesce(published_at, $2::timestamptz) where id = $1", [t.id, now().toISOString()]);
+    if (t.status === 'taken_down') return reply.code(409).send({ error: 'taken_down' });
+    if (t.status === 'in_review' || t.status === 'held') return reply.code(409).send({ error: 'already_submitted' });
+    if (t.status === 'published') return view(t.id);
+
+    const checks = await runChecks(ctx, t);
+    const status = await decideStatus(ctx, t.artist_id, checks);
+    const stamp = now().toISOString();
+    await db.query(
+      `update tracks set status = $2, submitted_at = $3::timestamptz, checks = $4::jsonb, reject_reason = null, review_note = null,
+              published_at = case when $2 = 'published' then coalesce(published_at, $3::timestamptz) else published_at end
+       where id = $1`,
+      [t.id, status, stamp, JSON.stringify(checks)],
+    );
+    await audit(db, now(), null, status === 'published' ? 'track.auto_published' : `track.${status}`, 'track', t.id, { duplicates: checks.duplicates.length, external: checks.external.status, fingerprinted: checks.fingerprinted });
     return view(t.id);
   });
 
@@ -212,6 +238,7 @@ export function registerStudioRoutes(ctx: Ctx) {
     if (!p.success) return invalid(reply, p.error);
     const t = await owned(p.data.id, req.userId);
     if (!t || t.status === 'removed') return reply.code(404).send({ error: 'not_found' });
+    if (t.status === 'taken_down') return reply.code(409).send({ error: 'taken_down' });
     await db.query("update tracks set status = case when audio_key is null then 'draft' else 'ready' end where id = $1", [t.id]);
     return view(t.id);
   });
@@ -222,7 +249,9 @@ export function registerStudioRoutes(ctx: Ctx) {
     if (!p.success) return invalid(reply, p.error);
     const t = await owned(p.data.id, req.userId);
     if (!t || t.status === 'removed') return reply.code(404).send({ error: 'not_found' });
+    if (t.status === 'taken_down') return reply.code(409).send({ error: 'taken_down' }); // kept until the notice is settled
     for (const key of [t.audio_key, t.stream_key, t.cover_key]) if (key) await storage.delete(key);
+    await deleteFingerprint(db, t.id);
     await db.query(
       "update tracks set status = 'removed', audio_key = null, stream_key = null, cover_key = null, audio_mime = null, stream_mime = null, cover_mime = null where id = $1",
       [t.id],

@@ -87,7 +87,7 @@ class _StudioPageState extends State<StudioPage> with BusyState<StudioPage> {
     if (mounted) setState(() => _progress = null);
   }
 
-  Future<void> _publish() => run(() async {
+  Future<void> _submit() => run(() async {
         final track = await widget.studio.publish(_done!.id);
         if (mounted) setState(() => _done = track);
       });
@@ -132,8 +132,12 @@ class _StudioPageState extends State<StudioPage> with BusyState<StudioPage> {
       const SizedBox(height: 4),
       Text(t.statusLabel, style: text.labelLarge, textAlign: TextAlign.center),
       const SizedBox(height: 24),
-      if (!t.isLive) FilledButton(onPressed: busy ? null : _publish, child: const Text('Publish now')),
+      if (t.canSubmit) FilledButton(onPressed: busy ? null : _submit, child: const Text('Submit for release')),
       if (t.isLive) Text('Your song is live on Vyro.', style: text.bodyLarge, textAlign: TextAlign.center),
+      if (t.status == 'in_review')
+        Text('Submitted for review. A reviewer will listen to it soon, and we will email you the decision.', style: text.bodyLarge, textAlign: TextAlign.center),
+      if (t.status == 'held')
+        Text('On hold for a quick copyright check. A reviewer will look at it soon, and we will email you the decision.', style: text.bodyLarge, textAlign: TextAlign.center),
       const SizedBox(height: 8),
       OutlinedButton(onPressed: _another, child: const Text('Upload another song')),
     ];
@@ -143,7 +147,7 @@ class _StudioPageState extends State<StudioPage> with BusyState<StudioPage> {
     return [
       Text('Upload a song', style: text.titleLarge),
       const SizedBox(height: 4),
-      Text('MP3, M4A, FLAC, WAV, OGG or AIFF. You can publish it right after.', style: text.bodySmall),
+      Text('MP3, M4A, FLAC, WAV, OGG or AIFF. Every song is checked and reviewed before it goes live.', style: text.bodySmall),
       const SizedBox(height: 16),
       OutlinedButton.icon(
         onPressed: busy ? null : _chooseAudio,

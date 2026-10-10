@@ -32,16 +32,18 @@ async function newTrack(who: Account, title: string, extra: object = {}) {
   return res.json().id as string;
 }
 
-/** Creates a song, uploads audio and publishes it. */
+let seed = 100;
+
+/** Creates a song with its own, unique audio, uploads it and publishes it. */
 async function publishedTrack(who: Account, title: string, extra: object = {}) {
   const id = await newTrack(who, title, extra);
-  expect((await put(`/v1/artists/me/tracks/${id}/audio`, who.token, wav)).statusCode).toBe(200);
+  expect((await put(`/v1/artists/me/tracks/${id}/audio`, who.token, makeWav(12, 22_050, ++seed))).statusCode).toBe(200);
   expect((await call('POST', `/v1/artists/me/tracks/${id}/publish`, who.token)).statusCode).toBe(200);
   return id;
 }
 
 beforeAll(async () => {
-  const made = await makeApp({ now: () => clock, minCohort: 1 });
+  const made = await makeApp({ now: () => clock, minCohort: 1, reviewPolicy: 'none' });
   ({ app, db, messenger, cleanup } = made);
   call = api(app).call;
   wav = makeWav(12);

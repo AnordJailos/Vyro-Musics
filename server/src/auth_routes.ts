@@ -113,6 +113,8 @@ export function registerAuthRoutes(ctx: Ctx) {
     );
   }
 
+  const isSuspended = async (userId: string) => (await db.query('select 1 from users where id = $1 and suspended_at is not null', [userId])).rows.length > 0;
+
   async function startSession(userId: string, deviceName: string | null | undefined) {
     return { user: await loadMe(userId), ...(await issueTokens(userId, deviceName ?? null)) };
   }
@@ -143,6 +145,7 @@ export function registerAuthRoutes(ctx: Ctx) {
     const row = (await db.query<{ id: string; password_hash: string | null }>('select id, password_hash from users where email = $1', [parsed.data.email.toLowerCase()])).rows[0];
     const ok = await verifyPassword(parsed.data.password, row?.password_hash ?? ctx.dummyHash);
     if (!row || !row.password_hash || !ok) return reply.code(401).send({ error: 'invalid_credentials' });
+    if (await isSuspended(row.id)) return reply.code(403).send({ error: 'account_suspended' });
     return startSession(row.id, parsed.data.deviceName);
   });
 
@@ -156,6 +159,7 @@ export function registerAuthRoutes(ctx: Ctx) {
       )
     ).rows[0];
     if (!row) return reply.code(401).send({ error: 'invalid_refresh_token' });
+    if (await isSuspended(row.user_id)) return reply.code(403).send({ error: 'account_suspended' });
     return issueTokens(row.user_id, row.device_name);
   });
 
@@ -205,6 +209,7 @@ export function registerAuthRoutes(ctx: Ctx) {
     if (result !== 'ok') return reply.code(400).send(codeFailure(result));
     const user = (await db.query<{ id: string }>('select id from users where phone = $1', [number])).rows[0];
     if (user) {
+      if (await isSuspended(user.id)) return reply.code(403).send({ error: 'account_suspended' });
       await db.query('update users set phone_verified_at = coalesce(phone_verified_at, $2::timestamptz) where id = $1', [user.id, now().toISOString()]);
       return startSession(user.id, deviceName);
     }
@@ -222,7 +227,10 @@ export function registerAuthRoutes(ctx: Ctx) {
     if (!identity) return reply.code(401).send({ error: 'invalid_token' });
 
     const linked = (await db.query<{ user_id: string }>('select user_id from identities where provider = $1 and subject = $2', [provider, identity.subject])).rows[0];
-    if (linked) return startSession(linked.user_id, deviceName);
+    if (linked) {
+      if (await isSuspended(linked.user_id)) return reply.code(403).send({ error: 'account_suspended' });
+      return startSession(linked.user_id, deviceName);
+    }
 
     // A new identity must come with an email the provider has checked. Without that we cannot tell
     // whose account it is, and an unchecked address could be used to take over someone else's.
@@ -231,6 +239,7 @@ export function registerAuthRoutes(ctx: Ctx) {
     // Same email as an existing account: the provider vouches for it, so link the two.
     const existing = (await db.query<{ id: string }>('select id from users where email = $1', [identity.email])).rows[0];
     if (existing) {
+      if (await isSuspended(existing.id)) return reply.code(403).send({ error: 'account_suspended' });
       await db.query('insert into identities (provider, subject, user_id, email) values ($1, $2, $3, $4)', [provider, identity.subject, existing.id, identity.email]);
       await db.query('update users set email_verified_at = coalesce(email_verified_at, $2::timestamptz) where id = $1', [existing.id, now().toISOString()]);
       return startSession(existing.id, deviceName);

@@ -229,7 +229,7 @@ void main() {
     testWidgets('uploads a song with a cover, then publishes it', (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 1800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final studio = FakeStudioApi();
+      final studio = FakeStudioApi()..publishStatus = 'published';
       final picker = FakePicker(audio: pickedFile('01 - Night_Drive.mp3', 3 * 1024 * 1024), image: pickedFile('cover.png', 1000));
       await tester.pumpWidget(_host(StudioPage(studio: studio, picker: picker)));
 
@@ -251,7 +251,7 @@ void main() {
       expect(find.textContaining('192 kbps'), findsOneWidget);
       expect(find.textContaining('-14.2 LUFS'), findsOneWidget);
 
-      await tester.tap(find.text('Publish now'));
+      await tester.tap(find.text('Submit for release'));
       await tester.pumpAndSettle();
       expect(studio.calls.last, 'publish');
       expect(find.text('Your song is live on Vyro.'), findsOneWidget);
@@ -259,6 +259,24 @@ void main() {
       await tester.tap(find.text('Upload another song'));
       await tester.pumpAndSettle();
       expect(find.text('Upload a song'), findsOneWidget);
+    });
+
+    testWidgets('says a submitted song is waiting for review, or on hold for a copyright check', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      for (final status in ['in_review', 'held']) {
+        final studio = FakeStudioApi()..publishStatus = status;
+        await tester.pumpWidget(_host(StudioPage(studio: studio, picker: FakePicker(audio: pickedFile('song.mp3', 2048)))));
+        await tester.tap(find.text('Choose audio file'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(FilledButton, 'Upload'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Submit for release'));
+        await tester.pumpAndSettle();
+        expect(find.text('Your song is live on Vyro.'), findsNothing);
+        expect(find.textContaining(status == 'held' ? 'quick copyright check' : 'Submitted for review'), findsOneWidget);
+        expect(find.text('Submit for release'), findsNothing); // it cannot be submitted twice
+      }
     });
 
     testWidgets('explains a rejected upload, and a retry reuses the same song instead of creating another', (tester) async {
@@ -283,19 +301,19 @@ void main() {
 
   group('Releases', () {
     testWidgets('lists the artist\'s songs and publishes, takes offline and deletes them', (tester) async {
-      final studio = FakeStudioApi();
+      final studio = FakeStudioApi()..publishStatus = 'published';
       final a = await studio.createTrack(title: 'Ready Song');
       await studio.uploadAudio(a.id, pickedFile('a.mp3', 10));
       await studio.createTrack(title: 'Empty Draft');
       await tester.pumpWidget(_host(ReleasesPage(studio: studio)));
       await tester.pumpAndSettle();
       expect(find.text('Ready Song'), findsOneWidget);
-      expect(find.textContaining('Ready to publish'), findsOneWidget);
+      expect(find.textContaining('Ready to submit'), findsOneWidget);
       expect(find.textContaining('no audio yet'), findsOneWidget);
 
       await tester.tap(find.byTooltip('Options for Ready Song'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Publish'));
+      await tester.tap(find.text('Submit for release'));
       await tester.pumpAndSettle();
       expect(studio.tracks.firstWhere((t) => t.title == 'Ready Song').isLive, isTrue);
       expect(find.textContaining('Live'), findsOneWidget);
@@ -308,7 +326,7 @@ void main() {
 
       await tester.tap(find.byTooltip('Options for Empty Draft'));
       await tester.pumpAndSettle();
-      expect(find.text('Publish'), findsNothing); // a song without audio cannot be published
+      expect(find.text('Submit for release'), findsNothing); // a song without audio cannot be submitted
       await tester.tap(find.text('Delete'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
@@ -316,11 +334,80 @@ void main() {
       expect(find.text('Empty Draft'), findsNothing);
     });
 
+    testWidgets('shows where each song stands, why one was not approved, and lets it be fixed and submitted again', (tester) async {
+      final studio = FakeStudioApi();
+      studio.seed('a', 'Waiting Song', 'in_review');
+      studio.seed('b', 'Held Song', 'held');
+      studio.seed('c', 'Refused Song', 'rejected', rejectReason: 'low_quality');
+      await tester.pumpWidget(_host(ReleasesPage(studio: studio)));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('In review'), findsOneWidget);
+      expect(find.textContaining('On hold for a copyright check'), findsOneWidget);
+      expect(find.textContaining('Not approved'), findsOneWidget);
+      expect(find.textContaining('Because the audio quality is too low'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Options for Refused Song'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Fix and submit again'));
+      await tester.pumpAndSettle();
+      expect(studio.calls, contains('publish'));
+      expect(studio.tracks.firstWhere((t) => t.id == 'c').status, 'in_review');
+
+      await tester.tap(find.byTooltip('Options for Waiting Song'));
+      await tester.pumpAndSettle();
+      expect(find.text('Withdraw from review'), findsOneWidget);
+      expect(find.text('Submit for release'), findsNothing);
+    });
+
+    testWidgets('lets an artist answer a copyright notice with a counter-notice', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final studio = FakeStudioApi();
+      studio.seed('t1', 'Taken Song', 'taken_down');
+      studio.notices.add(const TakedownInfo(id: 'n1', status: 'open', trackId: 't1', trackTitle: 'Taken Song', claimantName: 'Rights Holder', statement: 'This is my recording.'));
+      await tester.pumpWidget(_host(ReleasesPage(studio: studio)));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Taken down'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Options for Taken Song'));
+      await tester.pumpAndSettle();
+      expect(find.text('Delete'), findsNothing); // a song under a notice cannot be deleted
+      await tester.tap(find.text('Send a counter-notice'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Rights Holder says'), findsOneWidget);
+      expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Send')).onPressed, isNull); // needs everything filled in
+
+      await tester.enterText(find.widgetWithText(TextField, 'Why the notice is a mistake (at least 30 characters)'), 'I wrote and recorded this song myself, so the notice is a mistake.');
+      await tester.enterText(find.widgetWithText(TextField, 'Your full name, as a signature'), 'Amani Beats');
+      await tester.tap(find.byType(CheckboxListTile));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Send'));
+      await tester.pumpAndSettle();
+      expect(studio.calls, contains('counterNotice'));
+      expect(studio.notices.single.status, 'counter_filed');
+    });
+
     testWidgets('invites the artist to upload when there is nothing yet', (tester) async {
       await tester.pumpWidget(_host(ReleasesPage(studio: FakeStudioApi())));
       await tester.pumpAndSettle();
       expect(find.textContaining('Upload your first one'), findsOneWidget);
     });
+  });
+
+  test('review states, reasons and notices read from the server', () {
+    final t = StudioTrack.fromJson({'id': 'x', 'title': 'Song', 'status': 'rejected', 'hasAudio': true, 'rejectReason': 'duplicate', 'reviewNote': 'Same as another song'});
+    expect(t.canSubmit, isTrue);
+    expect(t.statusLabel, 'Not approved');
+    expect(rejectReasonText(t.rejectReason), 'it duplicates another song on Vyro');
+    expect(rejectReasonText('something-new'), contains('guidelines'));
+    for (final status in ['in_review', 'held']) {
+      final w = StudioTrack(id: 'w', title: 'W', status: status, hasAudio: true);
+      expect([w.isWaiting, w.canSubmit], [true, false]);
+    }
+    expect(const StudioTrack(id: 'd', title: 'D', status: 'taken_down', hasAudio: true).canSubmit, isFalse);
+    expect(const StudioTrack(id: 'n', title: 'N', status: 'ready').canSubmit, isFalse); // no audio
+    final n = TakedownInfo.fromJson({'id': 'n1', 'status': 'open', 'track': {'id': 't1', 'title': 'Song'}, 'claimantName': 'Someone', 'statement': 'Mine'});
+    expect([n.trackTitle, n.claimantName], ['Song', 'Someone']);
   });
 
   test('the placeholder catalog is empty and cannot stream', () async {

@@ -11,7 +11,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/server.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run --dir test"
+    "test": "vitest run --dir test",
+    "make-admin": "tsx src/make_admin.ts"
   },
   "dependencies": {
     "@fastify/rate-limit": "^11.2.0",

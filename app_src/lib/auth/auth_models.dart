@@ -69,6 +69,7 @@ class UserProfile {
     this.settings = const UserSettings(),
     this.tasteSet = false,
     this.artist,
+    this.role = 'user',
   });
 
   final String id;
@@ -87,7 +88,12 @@ class UserProfile {
   final bool tasteSet;
   final ArtistInfo? artist;
 
+  /// user, moderator or admin.
+  final String role;
+
   bool get isArtist => artist != null;
+  bool get isStaff => role == 'moderator' || role == 'admin';
+  bool get isAdmin => role == 'admin';
   bool get contactVerified => emailVerified || phoneVerified;
   bool get needsEmailCheck => email != null && !emailVerified;
   bool get parentPending => parentConsent == 'pending';
@@ -111,6 +117,7 @@ class UserProfile {
       settings: settings == null ? const UserSettings() : UserSettings.fromJson(settings.cast<String, Object?>()),
       tasteSet: j['tasteSet'] == true,
       artist: artist == null ? null : ArtistInfo.fromJson(artist.cast<String, Object?>()),
+      role: (j['role'] as String?) ?? 'user',
     );
   }
 
@@ -130,6 +137,7 @@ class UserProfile {
         'settings': settings.toJson(),
         'tasteSet': tasteSet,
         'artist': artist?.toJson(),
+        'role': role,
       };
 }
 

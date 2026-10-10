@@ -11,6 +11,8 @@ abstract class StudioApi {
   Future<StudioTrack> publish(String trackId);
   Future<StudioTrack> unpublish(String trackId);
   Future<void> deleteTrack(String trackId);
+  Future<List<TakedownInfo>> takedowns();
+  Future<void> counterNotice(String noticeId, {required String statement, required String signature});
 }
 
 Map<String, Object?> _map(Object? v) => (v as Map).cast<String, Object?>();
@@ -89,6 +91,17 @@ class HttpStudioApi implements StudioApi {
   @override
   Future<void> deleteTrack(String trackId) async {
     await _client.send('DELETE', '/v1/artists/me/tracks/$trackId');
+  }
+
+  @override
+  Future<List<TakedownInfo>> takedowns() async {
+    final m = _map(await _client.send('GET', '/v1/artists/me/takedowns'));
+    return [for (final n in (m['notices'] as List)) TakedownInfo.fromJson(_map(n))];
+  }
+
+  @override
+  Future<void> counterNotice(String noticeId, {required String statement, required String signature}) async {
+    await _client.send('POST', '/v1/artists/me/takedowns/$noticeId/counter-notice', body: {'statement': statement, 'signature': signature, 'consent': true});
   }
 }
 

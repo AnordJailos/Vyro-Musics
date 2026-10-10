@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../admin/admin_api.dart';
+import '../../admin/admin_page.dart';
+import '../../audio/playback_controller.dart';
 import '../auth_controller.dart';
 import '../auth_models.dart';
 import '../validators.dart';
@@ -69,9 +72,13 @@ Future<void> showParentCodeDialog(BuildContext context, AuthController auth) {
 
 /// Profile, privacy, parent permission, artist upgrade, sign out and account deletion.
 class AccountPage extends StatelessWidget {
-  const AccountPage({super.key, required this.auth});
+  const AccountPage({super.key, required this.auth, this.admin, this.playback});
 
   final AuthController auth;
+
+  /// For staff: where the admin console gets its data and plays previews.
+  final AdminApi? admin;
+  final PlaybackController? playback;
 
   Future<void> _change(BuildContext context, Future<void> Function() action) async {
     try {
@@ -241,6 +248,13 @@ class AccountPage extends StatelessWidget {
                 onChanged: user.isMinor ? null : (v) => _change(context, () => auth.updateSettings(explicitAllowed: v)),
               ),
               const Divider(),
+              if (user.isStaff && admin != null && playback != null)
+                ListTile(
+                  leading: const Icon(Icons.admin_panel_settings_outlined),
+                  title: const Text('Admin console'),
+                  subtitle: const Text('Review songs, copyright notices and artists.'),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AdminPage(admin: admin!, playback: playback!))),
+                ),
               if (!user.isArtist)
                 ListTile(
                   leading: const Icon(Icons.mic_external_on_rounded),

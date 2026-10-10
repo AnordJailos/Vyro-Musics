@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 
 import 'audio/audio_handler.dart';
+import 'admin/admin_api.dart';
 import 'audio/just_audio_deck.dart';
 import 'audio/playback_controller.dart';
 import 'auth/api_client.dart';
@@ -90,6 +91,7 @@ Future<void> main() async {
     catalog: HttpCatalogApi(client),
     studio: HttpStudioApi(client),
     picker: const DeviceFilePickerService(),
+    admin: HttpAdminApi(client),
   ));
 }
 
@@ -104,6 +106,7 @@ class VyroApp extends StatefulWidget {
     this.catalog = const EmptyCatalogApi(),
     this.studio = const OfflineStudioApi(),
     this.picker = const NoFilePickerService(),
+    this.admin = const OfflineAdminApi(),
   })  : stats = stats ?? DemoStatsRepository(),
         library = library ?? LibraryController(store: MemoryLibraryStore(), scanner: LibraryScanner(readTags: _noTags)),
         auth = auth ?? (AuthController(api: const OfflineAuthApi(), store: MemoryTokenStore())..continueAsGuest());
@@ -118,6 +121,7 @@ class VyroApp extends StatefulWidget {
   final CatalogApi catalog;
   final StudioApi studio;
   final FilePickerService picker;
+  final AdminApi admin;
 
   @override
   State<VyroApp> createState() => _VyroAppState();
@@ -156,6 +160,7 @@ class _VyroAppState extends State<VyroApp> {
             catalog: widget.catalog,
             studio: widget.studio,
             picker: widget.picker,
+            admin: widget.admin,
           ),
         ),
       ),

@@ -14,7 +14,7 @@ export async function makeApp(extra: Partial<AppDeps> = {}) {
   await migrate(db);
   const messenger = new MemoryMessenger();
   const dir = mkdtempSync(join(tmpdir(), 'vyro-test-'));
-  const app = await buildApp({ db, jwtSecret: 'x'.repeat(40), authRateLimit: 10_000, messenger, storage: new LocalDiskStorage(dir), ...extra });
+  const app = await buildApp({ db, jwtSecret: 'x'.repeat(40), authRateLimit: 10_000, noticeRateLimit: 10_000, messenger, storage: new LocalDiskStorage(dir), ...extra });
   return { app, db, messenger, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
 }
 

@@ -17,7 +17,7 @@ Needs Node 22+ and PostgreSQL (use the current stable release).
 ```bash
 cd server
 npm install
-npm test                      # 70 tests, run on an in-memory Postgres
+npm test                      # 98 tests, run on an in-memory Postgres
 export DATABASE_URL=postgres://user:pass@localhost:5432/vyro
 export JWT_SECRET=$(openssl rand -hex 32)
 npm run dev
@@ -105,9 +105,38 @@ Artists upload songs; listeners search and stream them; the mix engine can blend
 - **Server settings**: `STORAGE_DIR` (where files are kept, default `./data`) and, optionally, `FFMPEG_PATH`.
   With ffmpeg installed the server measures loudness (EBU R128) and makes a smaller AAC copy of lossless uploads to
   stream; without it, files are streamed as uploaded.
-- **Not built yet**: review of uploads before they go live (**songs publish immediately, so do not open uploads to the
-  public until the admin review and copyright check exist**), resumable uploads, albums and releases, adaptive
-  bitrates, and S3-style storage with a CDN (the storage layer is ready for it).
+- **Not built yet**: resumable uploads, albums and releases, adaptive bitrates, and S3-style storage with a CDN (the
+  storage layer is ready for it). Songs are reviewed before they go live: see the next section.
+
+## Review, copyright and admin
+
+Nothing goes live unchecked. When an artist submits a song ("Submit for release"):
+
+1. **Fingerprint check**: the audio is fingerprinted (Chromaprint) and compared with every live, in-review and
+   taken-down song. A copy from another artist, even re-encoded as MP3 or with the start cut off, puts the song
+   **on hold**. The same artist re-uploading their own song is only flagged.
+2. **Optional lookup against released music** (`ACOUSTID_API_KEY`): a match puts the song on hold. If the lookup is
+   unavailable, the song waits for a person.
+3. **Review policy** (`REVIEW_POLICY`): `all` (default) sends every clean song to a reviewer; `new_artists` lets verified
+   artists, and artists with three approved songs, go live directly; `none` lets clean songs go live. Audio that could not
+   be fingerprinted **never skips review**, whatever the policy.
+4. New audio for an existing song takes it offline until it is reviewed again, so an approved song cannot be swapped.
+
+- **Staff**: roles are `user`, `moderator` and `admin`. Make the first admin with `ADMIN_EMAILS=you@example.com` (applied
+  at start, for confirmed emails) or `npm run make-admin -- you@example.com`. Staff see an **Admin console** on the
+  Account screen: the review queue (listen first, approve or reject with a reason the artist is told, bulk actions),
+  copyright notices, and artists (verify, suspend, restore). Every decision goes into an audit log (admins can read it
+  through `GET /v1/admin/audit`).
+- **Copyright notices**: a rights holder can send a notice (`POST /v1/takedown-notices`); the song goes offline at once,
+  including streaming links already handed out; the artist can send a counter-notice; a reviewer upholds or restores it.
+  **Three upheld notices suspend the artist** (repeat-infringer policy). Suspended people are signed out everywhere,
+  cannot sign in, and their songs are hidden.
+- **Fingerprint tool**: install `fpcalc` (Chromaprint: `apt install libchromaprint-tools`, `brew install chromaprint`) or
+  an ffmpeg built with Chromaprint. Without either, nothing can be checked and every song waits for a person.
+- **Before real launch**: the wording and time limits of the notice process need a lawyer for each country; AcoustID's
+  free service is for non-commercial use (a commercial app needs an agreement with them, or a paid service such as
+  ACRCloud or Audible Magic behind the same interface); and anyone can send a notice, so decide how rights holders are
+  verified before you rely on it.
 
 ## Statistics
 

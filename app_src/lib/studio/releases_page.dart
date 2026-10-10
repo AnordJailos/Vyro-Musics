@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../auth/screens/auth_widgets.dart' show showError;
+import '../auth/screens/auth_widgets.dart' show showError, showNotice;
 import '../catalog/catalog_widgets.dart' show mmss;
 import 'studio_api.dart';
 import 'studio_models.dart';
@@ -47,6 +47,71 @@ class _ReleasesPageState extends State<ReleasesPage> {
     if (ok == true) await _act(() => widget.studio.deleteTrack(t.id));
   }
 
+  Future<void> _counterNotice(StudioTrack t) async {
+    final notices = await widget.studio.takedowns();
+    final open = notices.where((n) => n.trackId == t.id && n.status == 'open').toList();
+    if (open.isEmpty) {
+      if (mounted) showNotice(context, 'There is nothing to answer for this song right now.');
+      return;
+    }
+    final statement = TextEditingController();
+    final signature = TextEditingController();
+    var agreed = false;
+    if (!mounted) return;
+    final send = await showDialog<bool>(
+      context: context,
+      builder: (d) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Send a counter-notice'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${open.first.claimantName} says: "${open.first.statement}"'),
+                const SizedBox(height: 12),
+                TextField(controller: statement, maxLines: 4, onChanged: (_) => setState(() {}), decoration: const InputDecoration(labelText: 'Why the notice is a mistake (at least 30 characters)')),
+                const SizedBox(height: 8),
+                TextField(controller: signature, onChanged: (_) => setState(() {}), decoration: const InputDecoration(labelText: 'Your full name, as a signature')),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  value: agreed,
+                  onChanged: (v) => setState(() => agreed = v ?? false),
+                  title: const Text('I state in good faith that this song was removed by mistake, and I accept that this may be decided by a court.'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(d).pop(false), child: const Text('Cancel')),
+            FilledButton(onPressed: agreed && statement.text.trim().length >= 30 && signature.text.trim().length >= 2 ? () => Navigator.of(d).pop(true) : null, child: const Text('Send')),
+          ],
+        ),
+      ),
+    );
+    if (send == true) {
+      await _act(() => widget.studio.counterNotice(open.first.id, statement: statement.text.trim(), signature: signature.text.trim()));
+      if (mounted) showNotice(context, 'Your counter-notice was sent. A reviewer will decide.');
+    }
+  }
+
+  String _subtitle(StudioTrack t) {
+    final parts = <String>[t.statusLabel];
+    if (t.status == 'rejected') parts.add('Because ${rejectReasonText(t.rejectReason)}');
+    if (t.durationMs > 1000) parts.add(mmss(t.durationMs));
+    if (!t.hasAudio) parts.add('no audio yet');
+    return parts.join(' · ');
+  }
+
+  IconData _icon(StudioTrack t) {
+    if (t.isLive) return Icons.public_rounded;
+    if (t.isWaiting) return Icons.hourglass_top_rounded;
+    if (t.isTakenDown) return Icons.gavel_rounded;
+    if (t.status == 'rejected') return Icons.block_rounded;
+    return Icons.edit_note_rounded;
+  }
+
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
@@ -67,20 +132,23 @@ class _ReleasesPageState extends State<ReleasesPage> {
             children: [
               for (final t in tracks)
                 ListTile(
-                  leading: Icon(t.isLive ? Icons.public_rounded : Icons.edit_note_rounded),
+                  leading: Icon(_icon(t)),
                   title: Text(t.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  subtitle: Text('${t.statusLabel}${t.durationMs > 1000 ? ' · ${mmss(t.durationMs)}' : ''}${t.hasAudio ? '' : ' · no audio yet'}'),
+                  subtitle: Text(_subtitle(t)),
+                  isThreeLine: t.status == 'rejected',
                   trailing: PopupMenuButton<String>(
                     tooltip: 'Options for ${t.title}',
                     onSelected: (v) {
                       if (v == 'publish') _act(() => widget.studio.publish(t.id));
                       if (v == 'unpublish') _act(() => widget.studio.unpublish(t.id));
                       if (v == 'delete') _confirmDelete(t);
+                      if (v == 'counter') _counterNotice(t);
                     },
                     itemBuilder: (_) => [
-                      if (!t.isLive && t.hasAudio) const PopupMenuItem<String>(value: 'publish', child: Text('Publish')),
-                      if (t.isLive) const PopupMenuItem<String>(value: 'unpublish', child: Text('Take offline')),
-                      const PopupMenuItem<String>(value: 'delete', child: Text('Delete')),
+                      if (t.canSubmit) PopupMenuItem<String>(value: 'publish', child: Text(t.status == 'rejected' ? 'Fix and submit again' : 'Submit for release')),
+                      if (t.isLive || t.isWaiting) PopupMenuItem<String>(value: 'unpublish', child: Text(t.isLive ? 'Take offline' : 'Withdraw from review')),
+                      if (t.isTakenDown) const PopupMenuItem<String>(value: 'counter', child: Text('Send a counter-notice')),
+                      if (!t.isTakenDown) const PopupMenuItem<String>(value: 'delete', child: Text('Delete')),
                     ],
                   ),
                 ),

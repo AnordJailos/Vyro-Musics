@@ -1,8 +1,8 @@
 # Vyro Music: Product Requirements
 
-**Version 0.7 · 8 October 2026 · Status: for review**
+**Version 0.8 · 10 October 2026 · Status: for review**
 
-*Changes in v0.7: review before release, copyright checks, takedowns and suspensions built (new STU-21, ADM-12, ADM-13, SAF-16, SAF-17). v0.6: catalog, Studio uploads and streaming built (new STU-19, STU-20). v0.5: login and account screens built (new AUTH-15 to AUTH-18). v0.4: background playback and local library built (new LIB-16, LIB-17, PLY-20, DEV-14, DEV-15). v0.3: statistics redesigned from the best of Spotify, Apple Music, YouTube Studio, Audiomack, stats.fm and Last.fm (STA-16 to STA-20, new module PRF for listener profiles). v0.2: Normal and Mixing playback modes (MIX-21 to MIX-23), one codebase for desktop (DEV-12, DEV-13).*
+*Changes in v0.8: listening history built (new REC-18, REC-19, PRF-12). v0.7: review before release, copyright checks, takedowns and suspensions built (new STU-21, ADM-12, ADM-13, SAF-16, SAF-17). v0.6: catalog, Studio uploads and streaming built (new STU-19, STU-20). v0.5: login and account screens built (new AUTH-15 to AUTH-18). v0.4: background playback and local library built (new LIB-16, LIB-17, PLY-20, DEV-14, DEV-15). v0.3: statistics redesigned from the best of Spotify, Apple Music, YouTube Studio, Audiomack, stats.fm and Last.fm (STA-16 to STA-20, new module PRF for listener profiles). v0.2: Normal and Mixing playback modes (MIX-21 to MIX-23), one codebase for desktop (DEV-12, DEV-13).*
 
 ## 1. Vision
 
@@ -274,6 +274,8 @@ Each requirement has an ID, a phase tag and a checkbox.
 - [ ] **REC-15** [3] Blend: merge two friends' tastes into a shared, updating playlist.
 - [ ] **REC-16** [3] Playlist generator from a text prompt.
 - [ ] **REC-17** [4] AI-led listening sessions with a voice host.
+- [ ] **REC-18** [M] Listening time is measured honestly: seeks add nothing, pausing does not end a play, and a play under a second is ignored.
+- [ ] **REC-19** [M] Plays made offline or as a guest wait on the device and are sent later, without ever being counted twice.
 
 ### PLS: Playlists
 *Inspired by Spotify, Apple Music*
@@ -458,6 +460,7 @@ Each requirement has an ID, a phase tag and a checkbox.
 - [ ] **PRF-08** [M] Switch to keep listening stats private, only visible to the listener.
 - [ ] **PRF-09** [2] Public profile showing the stats the listener chose to share.
 - [ ] **PRF-10** [3] Year-in-music recap with a shareable card (see REC-14).
+- [ ] **PRF-12** [M] A "clear listening history" option that removes the history kept on the device.
 - [ ] **PRF-11** [2] On-device statistics for local files and YouTube plays, merged with server statistics so the profile covers everything the listener plays.
 
 ### ADM: Admin and curation

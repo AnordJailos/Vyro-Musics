@@ -1,11 +1,11 @@
 {
   "meta": {
-    "updated": "8 October 2026",
+    "updated": "10 October 2026",
     "next": [
-      "Run ./setup.sh on your machine and report what flutter analyze and flutter test say. Until then, every Built item is unconfirmed.",
-      "Send listening history from the app, so the statistics pages fill with real numbers now that songs can be streamed.",
+      "Run ./setup.sh on your machine and report what flutter analyze and flutter test say. Until then, every Built item is unconfirmed (there is a lot of it now).",
       "Before opening to the public: connect an email and SMS provider, set ADMIN_EMAILS, choose a copyright lookup service you may use commercially, and have a lawyer review the notice process.",
-      "Synced lyrics and offline downloads."
+      "Synced lyrics and offline downloads.",
+      "Recommendations (\"made for you\"), now that plays are recorded."
     ]
   },
   "items": {
@@ -162,8 +162,8 @@
       "note": "Songs and artist names on Vyro, plus local files. Albums, playlists and users are missing."
     },
     "REC-02": {
-      "status": "partial",
-      "note": "The server accepts and stores plays safely and unlinks them for private sessions (tested). The app does not send plays yet."
+      "status": "built",
+      "note": "Plays are recorded on the device and Vyro plays are sent in batches when signed in; private sessions and personalization are respected (server tested, app code and tests written, not run yet)."
     },
     "SOC-04": {
       "status": "partial",
@@ -183,7 +183,7 @@
     },
     "STA-01": {
       "status": "partial",
-      "note": "Plays, listeners, followers and saves with date ranges (server tested, screen reads live data when signed in). Playlist adds are missing."
+      "note": "Plays, listeners, followers and saves with date ranges, now filled by real plays once the app sends them (server tested, screen reads live data). Playlist adds are missing."
     },
     "STA-02": {
       "status": "partial",
@@ -351,7 +351,7 @@
     },
     "AUTH-10": {
       "status": "partial",
-      "note": "Private session and personalized-recommendations switches unlink plays from the listener (server tested). \"Hide activity\" does nothing yet because there is no activity feed."
+      "note": "Private session keeps a play out of the history on the device and unlinks it on the server (tested). \"Hide activity\" does nothing yet because there is no activity feed."
     },
     "AUTH-15": {
       "status": "done",
@@ -508,6 +508,22 @@
     "STU-21": {
       "status": "done",
       "note": "New audio takes a live song offline until it is reviewed again (tested)."
+    },
+    "REC-18": {
+      "status": "built",
+      "note": "Real listening time per song, including blends (tests written)."
+    },
+    "REC-19": {
+      "status": "built",
+      "note": "Offline and guest plays wait in an outbox; every play has its own id; bad data cannot block the rest (tests written)."
+    },
+    "PRF-11": {
+      "status": "built",
+      "note": "Profile combines Vyro listening from the server with music played from the device, streak included (tests written). YouTube plays are not part of it yet."
+    },
+    "PRF-12": {
+      "status": "built",
+      "note": "Clear listening history on the Account screen (test written)."
     }
   }
 }

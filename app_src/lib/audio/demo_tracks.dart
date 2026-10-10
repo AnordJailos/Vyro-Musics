@@ -10,5 +10,6 @@ final List<Track> demoTracks = [
       artist: 'SoundHelix',
       uri: Uri.parse('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-$i.mp3'),
       source: TrackSource.open,
+      countsAsListening: false,
     ),
 ];

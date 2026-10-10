@@ -122,10 +122,15 @@ class RetentionCurve {
 }
 
 class RankedItem {
-  const RankedItem(this.name, this.detail, this.minutes);
+  const RankedItem(this.name, this.detail, this.minutes, {this.plays = 0});
   final String name;
   final String detail;
+
+  /// The number shown next to the name: minutes for artists and genres, plays for songs.
   final int minutes;
+
+  /// Plays, kept so lists from different sources can be added together.
+  final int plays;
 }
 
 class ListenerStats {
@@ -142,6 +147,7 @@ class ListenerStats {
     required this.topArtists,
     required this.topTracks,
     required this.topGenres,
+    this.activeDays = const [],
   });
 
   final ListenerRange range;
@@ -156,6 +162,9 @@ class ListenerStats {
   final List<RankedItem> topArtists;
   final List<RankedItem> topTracks;
   final List<RankedItem> topGenres;
+
+  /// Days with any listening (YYYY-MM-DD, newest first), so streaks can be worked out across sources.
+  final List<String> activeDays;
 }
 
 /// Where the statistics come from. The demo implementation below feeds the

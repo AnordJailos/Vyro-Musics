@@ -73,6 +73,7 @@ void main() {
       'topGenres': [
         {'genre': 'afrobeats', 'minutes': 16},
       ],
+      'activeDays': ['2026-10-05', '2026-10-04'],
     }, ListenerRange.year);
 
     expect(stats.minutes, 18);
@@ -81,6 +82,9 @@ void main() {
     expect(stats.topArtists.single.detail, '6 plays');
     expect(stats.topTracks.single.minutes, 5); // for songs the number shown is plays
     expect(stats.topGenres.single.name, 'Afrobeats');
+    expect(stats.activeDays, ['2026-10-05', '2026-10-04']);
+    expect(stats.topArtists.single.plays, 6); // kept so lists from different sources can be added
+    expect(stats.topTracks.single.plays, 5);
   });
 
   test('a brand-new listener (all zeros) still gives a complete model', () {

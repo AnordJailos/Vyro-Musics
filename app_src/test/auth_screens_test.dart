@@ -230,6 +230,25 @@ void main() {
       expect(api.calls, isNot(contains('deleteAccount')));
     });
 
+    testWidgets('clears the listening history on this device, after asking', (tester) async {
+      await _tall(tester);
+      var cleared = false;
+      final auth = await signedIn(FakeAuthApi());
+      await tester.pumpWidget(_host(AccountPage(auth: auth, onClearHistory: () async => cleared = true)));
+      await tester.tap(find.text('Clear listening history'));
+      await tester.pumpAndSettle();
+      expect(find.text('Clear listening history?'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(cleared, isFalse);
+
+      await tester.tap(find.text('Clear listening history'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Clear'));
+      await tester.pumpAndSettle();
+      expect(cleared, isTrue);
+    });
+
     testWidgets('keeps explicit content off for minors', (tester) async {
       await _tall(tester);
       final auth = await signedIn(FakeAuthApi(user: testUser(isMinor: true)));

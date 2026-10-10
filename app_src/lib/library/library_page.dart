@@ -19,7 +19,7 @@ class LibraryPage extends StatelessWidget {
   final PlaybackController playback;
 
   void _play(List<LibraryTrack> list, int index) {
-    playback.setQueue([for (final t in list) t.toPlayable()], startIndex: index);
+    playback.setQueue([for (final t in list) t.toPlayable()], startIndex: index, origin: 'library');
   }
 
   @override

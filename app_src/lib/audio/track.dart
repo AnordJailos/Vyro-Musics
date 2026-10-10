@@ -11,6 +11,9 @@ class Track {
     this.allowMixing = true,
     this.resolveUri,
     this.loudnessLufs,
+    this.album,
+    this.genre,
+    this.countsAsListening = true,
   });
 
   final String id;
@@ -27,6 +30,11 @@ class Track {
 
   /// Measured loudness (EBU R128), used later to even out volume between songs.
   final double? loudnessLufs;
+  final String? album;
+  final String? genre;
+
+  /// False for demo songs and reviewer previews, which must not show up in anyone's listening history.
+  final bool countsAsListening;
 
   /// SRC-06 / MIX-08: YouTube items and license-restricted tracks never enter
   /// the mix engine. Any change involving them is a clean cut.

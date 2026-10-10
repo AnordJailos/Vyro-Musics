@@ -138,6 +138,21 @@ Nothing goes live unchecked. When an artist submits a song ("Submit for release"
   ACRCloud or Audible Magic behind the same interface); and anyone can send a notice, so decide how rights holders are
   verified before you rely on it.
 
+## Listening history
+
+Every play is recorded on the device, with how long you really listened (a seek forward adds nothing, and pausing does not
+end a play). Plays of Vyro songs are also sent to the server, so artists see real numbers and your profile fills in.
+
+- **Kept on the device**: the history, so your profile can also count music from your own files. **Clear listening history**
+  (Account screen) removes it. Demo songs and reviewer previews are never recorded.
+- **Sent to the server**: only Vyro songs, in batches, whenever someone is signed in. Offline plays wait and are sent
+  later; every play has its own id, so nothing is counted twice; one bad play cannot block the rest. Guests' Vyro plays wait
+  and are sent when they sign in.
+- **Private session** (Account screen): the play is not kept in your history; the server still counts it for the artist,
+  without linking it to you. Turning personalization off does the same on the server.
+- **Profile**: Vyro listening from the server plus music from your own files, with the streak worked out from both. With
+  no connection, the profile is built from the history on the device.
+
 ## Statistics
 
 Two screens, one set of numbers (Flutter screens now use demo data until login is wired up):

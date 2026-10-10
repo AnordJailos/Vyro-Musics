@@ -19,6 +19,10 @@ import 'auth/screens/auth_gate.dart';
 import 'auth/social_sign_in.dart';
 import 'auth/token_store.dart';
 import 'catalog/catalog_api.dart';
+import 'history/history_store.dart';
+import 'history/history_sync.dart';
+import 'history/local_stats.dart';
+import 'history/play_recorder.dart';
 import 'library/device_library_platform.dart';
 import 'library/library_controller.dart';
 import 'library/library_models.dart' show TagInfo;
@@ -42,10 +46,12 @@ Future<void> main() async {
   // just_audio's native players.
   if (desktopBackend) JustAudioMediaKit.ensureInitialized();
 
+  late final PlayRecorder recorder;
   final playback = PlaybackController(
     deckA: JustAudioDeck(),
     deckB: JustAudioDeck(),
     describeError: (e) => e is ApiException ? e.message : 'Could not play that song.',
+    onPlayEnded: (play) => unawaited(recorder.record(play)),
   );
 
   // Background playback, notification, lock screen and headset buttons.
@@ -80,18 +86,31 @@ Future<void> main() async {
     session: session,
     deviceName: kIsWeb ? 'web' : '${Platform.operatingSystem} app',
   );
+  // Listening history: kept on the device, and Vyro plays are sent to the server whenever someone is signed in.
+  final history = FileHistoryStore();
+  final sync = HistorySync(store: history, api: HttpHistoryApi(client), canUpload: () => auth.isSignedIn && !auth.isOffline);
+  recorder = PlayRecorder(
+    store: history,
+    sync: sync,
+    isPrivate: () => auth.user?.settings.privateSession ?? false,
+    platform: kIsWeb ? 'web' : Platform.operatingSystem,
+  );
+  auth.addListener(() {
+    if (auth.isSignedIn) sync.schedule(immediately: true); // sends anything waiting from before signing in
+  });
   unawaited(auth.restore());
 
   runApp(VyroApp(
     playback: playback,
     library: library,
     auth: auth,
-    stats: ApiStatsRepository(client),
+    stats: MergedStatsRepository(server: ApiStatsRepository(client), store: history),
     social: const UnconfiguredSocialSignIn(),
     catalog: HttpCatalogApi(client),
     studio: HttpStudioApi(client),
     picker: const DeviceFilePickerService(),
     admin: HttpAdminApi(client),
+    history: history,
   ));
 }
 
@@ -107,8 +126,10 @@ class VyroApp extends StatefulWidget {
     this.studio = const OfflineStudioApi(),
     this.picker = const NoFilePickerService(),
     this.admin = const OfflineAdminApi(),
+    HistoryStore? history,
   })  : stats = stats ?? DemoStatsRepository(),
         library = library ?? LibraryController(store: MemoryLibraryStore(), scanner: LibraryScanner(readTags: _noTags)),
+        history = history ?? MemoryHistoryStore(),
         auth = auth ?? (AuthController(api: const OfflineAuthApi(), store: MemoryTokenStore())..continueAsGuest());
 
   final PlaybackController playback;
@@ -122,6 +143,7 @@ class VyroApp extends StatefulWidget {
   final StudioApi studio;
   final FilePickerService picker;
   final AdminApi admin;
+  final HistoryStore history;
 
   @override
   State<VyroApp> createState() => _VyroAppState();
@@ -161,6 +183,7 @@ class _VyroAppState extends State<VyroApp> {
             studio: widget.studio,
             picker: widget.picker,
             admin: widget.admin,
+            history: widget.history,
           ),
         ),
       ),

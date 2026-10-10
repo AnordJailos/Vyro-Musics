@@ -60,6 +60,7 @@ class CatalogTrack {
         duration: Duration(milliseconds: durationMs),
         allowMixing: allowMixing,
         loudnessLufs: loudnessLufs,
+        genre: genre,
         resolveUri: () => streamUri(id),
       );
 }

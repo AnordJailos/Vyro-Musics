@@ -81,5 +81,7 @@ class LibraryTrack {
         uri: Uri.file(path),
         source: TrackSource.local,
         duration: durationMs > 0 ? Duration(milliseconds: durationMs) : null,
+        album: album,
+        genre: genre,
       );
 }

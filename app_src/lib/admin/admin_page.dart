@@ -122,6 +122,7 @@ class _ReviewTabState extends State<_ReviewTab> {
       source: TrackSource.vyro,
       duration: Duration(milliseconds: item.durationMs),
       allowMixing: false,
+      countsAsListening: false,
       resolveUri: () => widget.admin.previewUri(item.id),
     );
     widget.playback.setQueue([track]);

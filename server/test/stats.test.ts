@@ -102,6 +102,27 @@ describe('play ingest', () => {
     await call('POST', '/v1/me/delete', u.token, { confirm: 'DELETE', password: 'correct-horse-battery' });
   });
 
+  it('accepts plays written exactly the way the app writes them (microseconds, Z, only known fields)', async () => {
+    const u = await signUp('appshape', 'KE');
+    const fromApp = {
+      id: randomUUID(),
+      trackId: t1,
+      startedAt: '2026-10-05T10:00:00.123456Z',
+      listenedMs: 61234,
+      source: 'chart',
+      platform: 'windows',
+      mode: 'mixing',
+      mixedWithTrackId: t2,
+    };
+    const res = await call('POST', '/v1/events/listens', u.token, { events: [fromApp] });
+    expect(res.statusCode).toBe(202);
+    expect(res.json().accepted).toBe(1);
+    const row = (await db.query<any>('select source, platform, mode, valid, mixed_with_track_id from listen_events where id = $1', [fromApp.id])).rows[0];
+    expect(row).toMatchObject({ source: 'chart', platform: 'windows', mode: 'mixing', valid: true, mixed_with_track_id: t2 });
+    await db.query('delete from listen_events where id = $1', [fromApp.id]); // keep the other tests' numbers unchanged
+    await call('POST', '/v1/me/delete', u.token, { confirm: 'DELETE', password: 'correct-horse-battery' });
+  });
+
   it('requires a login', async () => {
     expect((await call('POST', '/v1/events/listens', undefined, { events: [play(t1, 1, 1000)] })).statusCode).toBe(401);
   });
@@ -196,6 +217,7 @@ describe('listener profile statistics', () => {
     expect(s.artistsHeard).toBe(1);
     expect(s.newArtists).toBe(1);
     expect(s.streakDays).toBe(5);
+    expect(s.activeDays).toEqual(['2026-10-05', '2026-10-04', '2026-10-03', '2026-10-02', '2026-10-01']);
     expect(s.persona).toBe('daytime');
     expect(s.topArtists[0]).toMatchObject({ name: 'Stats Star', plays: 6 });
     expect(s.topTracks[0].title).toBe('Song One');

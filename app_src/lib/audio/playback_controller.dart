@@ -13,13 +13,45 @@ enum PlaybackMode { normal, mixing }
 
 enum RepeatMode { off, all, one }
 
+/// One song's play, reported when it stops being the current song.
+class PlayEnded {
+  const PlayEnded({required this.track, required this.startedAt, required this.listenedMs, required this.mode, required this.origin, this.mixedInto});
+
+  final Track track;
+  final DateTime startedAt;
+
+  /// Time actually spent listening. A jump forward (a seek) adds nothing, and pausing does not end a play.
+  final int listenedMs;
+  final PlaybackMode mode;
+
+  /// Where the person started it: search, chart, library, direct and so on.
+  final String origin;
+
+  /// The song this one was blended into, when it ended with a blend.
+  final Track? mixedInto;
+}
+
+class _Session {
+  _Session(this.track, this.startedAt, this.mode, this.origin);
+
+  final Track track;
+  final DateTime startedAt;
+  final PlaybackMode mode;
+  final String origin;
+  Duration played = Duration.zero;
+  Duration? lastPosition;
+}
+
 class PlaybackController extends ChangeNotifier {
   PlaybackController({
     required Deck deckA,
     required Deck deckB,
     this.tickInterval = const Duration(milliseconds: 20),
     this.describeError,
-  }) : _decks = [deckA, deckB] {
+    this.onPlayEnded,
+    DateTime Function()? clock,
+  })  : _decks = [deckA, deckB],
+        _clock = clock ?? DateTime.now {
     for (var i = 0; i < 2; i++) {
       _subs.add(_decks[i].positionStream.listen((p) => _onPosition(i, p)));
       _subs.add(_decks[i].completedStream.listen((_) => _onCompleted(i)));
@@ -35,6 +67,12 @@ class PlaybackController extends ChangeNotifier {
 
   /// Turns a failure (for example no connection) into a message for the person.
   final String Function(Object error)? describeError;
+
+  /// Called each time a song's play ends, so it can go into the listening history.
+  final void Function(PlayEnded play)? onPlayEnded;
+  final DateTime Function() _clock;
+  String _origin = 'direct';
+  final List<_Session?> _sessions = [null, null];
   final List<Deck> _decks;
   final List<StreamSubscription<Object?>> _subs = [];
 
@@ -123,12 +161,15 @@ class PlaybackController extends ChangeNotifier {
 
   // ---- commands -----------------------------------------------------------
 
-  Future<void> setQueue(List<Track> tracks, {int startIndex = 0, bool autoPlay = true}) {
+  Future<void> setQueue(List<Track> tracks, {int startIndex = 0, bool autoPlay = true, String origin = 'direct'}) {
     return _enqueue(() async {
       _commitFade();
+      _origin = origin;
       _queue = List<Track>.unmodifiable(tracks);
       await _decks[1 - _active].stop();
       if (tracks.isEmpty) {
+        _endSession(0);
+        _endSession(1);
         _index = -1;
         _playing = false;
         await _decks[_active].stop();
@@ -239,6 +280,9 @@ class PlaybackController extends ChangeNotifier {
   /// Plain change on the active deck: no overlap.
   Future<void> _cutTo(int target) async {
     final deck = _decks[_active];
+    _endSession(0);
+    _endSession(1);
+    _startSession(_active, _queue[target]);
     _index = target;
     _autoMixScheduled = false;
     position.value = Duration.zero;
@@ -275,6 +319,7 @@ class PlaybackController extends ChangeNotifier {
     await incoming.setVolume(0);
     await incoming.load(nextTrack);
     await incoming.play();
+    _startSession(incomingIdx, nextTrack);
 
     _fade = _Fade(outgoing: outgoingIdx, incoming: incomingIdx, total: length, target: target);
     _autoMixScheduled = false;
@@ -308,6 +353,7 @@ class PlaybackController extends ChangeNotifier {
     _fadeTimer?.cancel();
     _fadeTimer = null;
     _fade = null;
+    _endSession(f.outgoing, mixedInto: _queue[f.target]);
     unawaited(_decks[f.outgoing].stop());
     unawaited(_decks[f.incoming].setVolume(1));
     _active = f.incoming;
@@ -320,6 +366,7 @@ class PlaybackController extends ChangeNotifier {
   // ---- natural end of a track --------------------------------------------
 
   void _onPosition(int deck, Duration p) {
+    _accumulate(deck, p);
     if (deck != _displayDeck) return;
     position.value = p;
     if (deck == _active) _maybeScheduleAutoMix(p);
@@ -351,6 +398,7 @@ class PlaybackController extends ChangeNotifier {
     if (_index != fromIndex || _fade != null) return;
     final target = _nextIndex(natural: true);
     if (target == null) {
+      _endSession(_active);
       _playing = false;
       await _decks[_active].pause();
       await _decks[_active].seek(Duration.zero);
@@ -360,11 +408,43 @@ class PlaybackController extends ChangeNotifier {
     }
     if (target == _index) {
       _autoMixScheduled = false;
+      _endSession(_active); // playing it again counts as a new play
+      _startSession(_active, current!);
       await _decks[_active].seek(Duration.zero);
       await _decks[_active].play();
       return;
     }
     await _transitionTo(target, manual: false);
+  }
+
+  // ---- listening history ---------------------------------------------------
+
+  void _startSession(int deck, Track track) {
+    _endSession(deck);
+    _sessions[deck] = track.countsAsListening ? _Session(track, _clock().toUtc(), _mode, _origin) : null;
+  }
+
+  void _endSession(int deck, {Track? mixedInto}) {
+    final s = _sessions[deck];
+    _sessions[deck] = null;
+    final report = onPlayEnded;
+    if (s == null || report == null) return;
+    var played = s.played;
+    final length = s.track.duration;
+    if (length != null && played > length) played = length;
+    if (played < const Duration(seconds: 1)) return; // an accidental tap is not a play
+    report(PlayEnded(track: s.track, startedAt: s.startedAt, listenedMs: played.inMilliseconds, mode: s.mode, origin: s.origin, mixedInto: mixedInto));
+  }
+
+  // Adds up time spent listening from the position readings. A big jump is a seek and counts for nothing.
+  void _accumulate(int deck, Duration position) {
+    final s = _sessions[deck];
+    if (s == null || !_playing) return;
+    final last = s.lastPosition;
+    s.lastPosition = position;
+    if (last == null) return;
+    final step = position - last;
+    if (step > Duration.zero && step < const Duration(seconds: 2)) s.played += step;
   }
 
   @override

@@ -369,6 +369,9 @@ export async function listenerStats(db: Db, userId: string, range: ListenerRange
     artistsHeard: totals.artists as number,
     newArtists,
     streakDays: streakFrom(dayRows.map((r: any) => r.day as string), localToday),
+    // The days (in the listener's time zone, newest first) with any listening, so the app can combine them with
+    // plays of music on the device and get the streak exactly right.
+    activeDays: dayRows.map((r: any) => r.day as string),
     persona: personaFromClock(clock),
     clock,
     topArtists,

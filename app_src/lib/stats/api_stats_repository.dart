@@ -100,9 +100,10 @@ ListenerStats parseListenerStats(Map<String, Object?> j, ListenerRange range) {
     streakDays: _i(j['streakDays']),
     persona: _persona(j['persona'] as String?),
     clock: clock.length == 24 ? clock : List<int>.filled(24, 0),
-    topArtists: [for (final a in _list(j['topArtists'])) RankedItem(a['name'] as String, '${_i(a['plays'])} plays', _i(a['minutes']))],
-    topTracks: [for (final t in _list(j['topTracks'])) RankedItem(t['title'] as String, t['artist'] as String, _i(t['plays']))],
+    topArtists: [for (final a in _list(j['topArtists'])) RankedItem(a['name'] as String, '${_i(a['plays'])} plays', _i(a['minutes']), plays: _i(a['plays']))],
+    topTracks: [for (final t in _list(j['topTracks'])) RankedItem(t['title'] as String, t['artist'] as String, _i(t['plays']), plays: _i(t['plays']))],
     topGenres: [for (final g in _list(j['topGenres'])) RankedItem(_titleCase(g['genre'] as String), '', _i(g['minutes']))],
+    activeDays: [for (final d in (j['activeDays'] as List? ?? const [])) '$d'],
   );
 }
 

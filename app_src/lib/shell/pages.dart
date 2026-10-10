@@ -31,11 +31,11 @@ class _HomePageState extends State<HomePage> {
     await Future.wait([_fresh.catchError((_) => <CatalogTrack>[]), _top.catchError((_) => <CatalogTrack>[])]);
   }
 
-  void _play(List<CatalogTrack> list, int index) {
-    widget.controller.setQueue([for (final t in list) t.toPlayable(widget.catalog.streamUri)], startIndex: index);
+  void _play(List<CatalogTrack> list, int index, String origin) {
+    widget.controller.setQueue([for (final t in list) t.toPlayable(widget.catalog.streamUri)], startIndex: index, origin: origin);
   }
 
-  Widget _section(String title, Future<List<CatalogTrack>> future, String emptyText) {
+  Widget _section(String title, Future<List<CatalogTrack>> future, String emptyText, String origin) {
     final text = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,7 +57,7 @@ class _HomePageState extends State<HomePage> {
             return Column(
               children: [
                 for (var i = 0; i < shown.length; i++)
-                  CatalogTrackTile(track: shown[i], catalog: widget.catalog, onTap: () => _play(shown, i)),
+                  CatalogTrackTile(track: shown[i], catalog: widget.catalog, onTap: () => _play(shown, i, origin)),
               ],
             );
           },
@@ -83,8 +83,8 @@ class _HomePageState extends State<HomePage> {
           Center(
             child: Text('PRESS PLAY. KEEP THE FLOW.', style: text.labelMedium?.copyWith(letterSpacing: 3, color: VyroColors.mist)),
           ),
-          _section('New on Vyro', _fresh, 'Songs from artists will appear here as they join Vyro.'),
-          _section('Top this week', _top, 'The most played songs will appear here.'),
+          _section('New on Vyro', _fresh, 'Songs from artists will appear here as they join Vyro.', 'direct'),
+          _section('Top this week', _top, 'The most played songs will appear here.', 'chart'),
           const SizedBox(height: 20),
           Text('Try the mix engine', style: text.titleMedium),
           const SizedBox(height: 4),

@@ -72,13 +72,35 @@ Future<void> showParentCodeDialog(BuildContext context, AuthController auth) {
 
 /// Profile, privacy, parent permission, artist upgrade, sign out and account deletion.
 class AccountPage extends StatelessWidget {
-  const AccountPage({super.key, required this.auth, this.admin, this.playback});
+  const AccountPage({super.key, required this.auth, this.admin, this.playback, this.onClearHistory});
 
   final AuthController auth;
 
   /// For staff: where the admin console gets its data and plays previews.
   final AdminApi? admin;
   final PlaybackController? playback;
+
+  /// Forgets the listening history kept on this device.
+  final Future<void> Function()? onClearHistory;
+
+  Future<void> _clearHistory(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: const Text('Clear listening history?'),
+        content: const Text('This removes the list of what you played from this device. Your statistics start again from now. Plays already counted for artists stay counted, without your name.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(d).pop(false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.of(d).pop(true), child: const Text('Clear')),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    await _change(context, () async {
+      await onClearHistory!();
+      if (context.mounted) showNotice(context, 'Listening history cleared.');
+    });
+  }
 
   Future<void> _change(BuildContext context, Future<void> Function() action) async {
     try {
@@ -247,6 +269,13 @@ class AccountPage extends StatelessWidget {
                 value: s.explicitAllowed,
                 onChanged: user.isMinor ? null : (v) => _change(context, () => auth.updateSettings(explicitAllowed: v)),
               ),
+              if (onClearHistory != null)
+                ListTile(
+                  leading: const Icon(Icons.history_toggle_off_rounded),
+                  title: const Text('Clear listening history'),
+                  subtitle: const Text('Removes what you played from this device.'),
+                  onTap: () => _clearHistory(context),
+                ),
               const Divider(),
               if (user.isStaff && admin != null && playback != null)
                 ListTile(

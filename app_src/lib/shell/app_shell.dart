@@ -9,6 +9,7 @@ import '../auth/screens/artist_upgrade_page.dart';
 import '../auth/screens/guest_prompt.dart';
 import '../brand/vyro_mark.dart';
 import '../catalog/catalog_api.dart';
+import '../history/history_store.dart';
 import '../catalog/search_page.dart';
 import '../library/library_controller.dart';
 import '../library/library_page.dart';
@@ -59,6 +60,7 @@ class AppShell extends StatefulWidget {
     required this.studio,
     required this.picker,
     required this.admin,
+    required this.history,
   });
 
   final ThemeController theme;
@@ -72,6 +74,7 @@ class AppShell extends StatefulWidget {
   final StudioApi studio;
   final FilePickerService picker;
   final AdminApi admin;
+  final HistoryStore history;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -106,7 +109,7 @@ class _AppShellState extends State<AppShell> {
   StatsRepository get _stats => _auth.isSignedIn ? widget.stats : _demoStats;
 
   void _openAccount() {
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AccountPage(auth: _auth, admin: widget.admin, playback: widget.playback)));
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AccountPage(auth: _auth, admin: widget.admin, playback: widget.playback, onClearHistory: widget.history.clearHistory)));
   }
 
   Widget _page(_Tab tab) {

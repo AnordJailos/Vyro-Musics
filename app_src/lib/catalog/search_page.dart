@@ -48,11 +48,11 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _playVyro(List<CatalogTrack> list, int i) {
-    widget.playback.setQueue([for (final t in list) t.toPlayable(widget.catalog.streamUri)], startIndex: i);
+    widget.playback.setQueue([for (final t in list) t.toPlayable(widget.catalog.streamUri)], startIndex: i, origin: 'search');
   }
 
   void _playLocal(List<LibraryTrack> list, int i) {
-    widget.playback.setQueue([for (final t in list) t.toPlayable()], startIndex: i);
+    widget.playback.setQueue([for (final t in list) t.toPlayable()], startIndex: i, origin: 'search');
   }
 
   @override

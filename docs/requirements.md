@@ -1,8 +1,8 @@
 # Vyro Music: Product Requirements
 
-**Version 0.6 · 8 October 2026 · Status: for review**
+**Version 0.7 · 8 October 2026 · Status: for review**
 
-*Changes in v0.6: catalog, Studio uploads and streaming built (new STU-19, STU-20). v0.5: login and account screens built (new AUTH-15 to AUTH-18). v0.4: background playback and local library built (new LIB-16, LIB-17, PLY-20, DEV-14, DEV-15). v0.3: statistics redesigned from the best of Spotify, Apple Music, YouTube Studio, Audiomack, stats.fm and Last.fm (STA-16 to STA-20, new module PRF for listener profiles). v0.2: Normal and Mixing playback modes (MIX-21 to MIX-23), one codebase for desktop (DEV-12, DEV-13).*
+*Changes in v0.7: review before release, copyright checks, takedowns and suspensions built (new STU-21, ADM-12, ADM-13, SAF-16, SAF-17). v0.6: catalog, Studio uploads and streaming built (new STU-19, STU-20). v0.5: login and account screens built (new AUTH-15 to AUTH-18). v0.4: background playback and local library built (new LIB-16, LIB-17, PLY-20, DEV-14, DEV-15). v0.3: statistics redesigned from the best of Spotify, Apple Music, YouTube Studio, Audiomack, stats.fm and Last.fm (STA-16 to STA-20, new module PRF for listener profiles). v0.2: Normal and Mixing playback modes (MIX-21 to MIX-23), one codebase for desktop (DEV-12, DEV-13).*
 
 ## 1. Vision
 
@@ -107,6 +107,7 @@ Each requirement has an ID, a phase tag and a checkbox.
 - [ ] **STU-17** [3] Music video upload or link.
 - [ ] **STU-18** [3] Announcements to followers.
 - [ ] **STU-19** [M] Removing a song deletes its files, while past plays keep counting in the artist's statistics.
+- [ ] **STU-21** [M] Uploading new audio for an existing song takes it offline until it is reviewed again.
 - [ ] **STU-20** [M] Uploads have a size limit, checked before sending and again by the server, and a failed upload can be retried without creating a second song.
 
 ### LIB: Local library
@@ -441,6 +442,8 @@ Each requirement has an ID, a phase tag and a checkbox.
 - [ ] **SAF-13** [2] Published explanations of how stream counts and recommendations work.
 - [ ] **SAF-14** [2] Dispute and appeal process for artists.
 - [ ] **SAF-15** [2] Penetration test before public launch and a vulnerability disclosure channel.
+- [ ] **SAF-16** [M] Repeat infringers are suspended automatically after 3 upheld copyright notices.
+- [ ] **SAF-17** [M] Suspended accounts are signed out everywhere and cannot sign in, and their songs are hidden.
 
 ### PRF: Listener profile and statistics
 *Inspired by Apple Music Replay, Spotify Wrapped, stats.fm, Last.fm*
@@ -470,6 +473,8 @@ Each requirement has an ID, a phase tag and a checkbox.
 - [ ] **ADM-09** [2] A/B testing framework.
 - [ ] **ADM-10** [3] Business dashboards: daily and monthly actives, retention, listening hours, cost per user.
 - [ ] **ADM-11** [3] Segmented announcement and push campaigns.
+- [ ] **ADM-12** [M] Reviewers can listen to a song before deciding, including songs that are not public.
+- [ ] **ADM-13** [M] A review policy setting (every song, only new artists, or none), and audio that could not be checked never skips review.
 
 ### NFR: Non-functional requirements
 

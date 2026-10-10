@@ -4,7 +4,7 @@
     "next": [
       "Run ./setup.sh on your machine and report what flutter analyze and flutter test say. Until then, every Built item is unconfirmed.",
       "Send listening history from the app, so the statistics pages fill with real numbers now that songs can be streamed.",
-      "Review of uploads and a copyright check before opening uploads to the public. Songs currently go live the moment an artist publishes them.",
+      "Before opening to the public: connect an email and SMS provider, set ADMIN_EMAILS, choose a copyright lookup service you may use commercially, and have a lawyer review the notice process.",
       "Synced lyrics and offline downloads."
     ]
   },
@@ -62,8 +62,8 @@
       "note": "Artists use the same app and library. Using their listening for recommendations is not built."
     },
     "ART-11": {
-      "status": "partial",
-      "note": "Every artist has a verified flag. The review process is missing."
+      "status": "built",
+      "note": "Moderators can mark an artist verified, and verified artists can skip review under the \"new artists\" policy (server tested, screen built)."
     },
     "STU-03": {
       "status": "partial",
@@ -323,7 +323,7 @@
     },
     "NFR-10": {
       "status": "partial",
-      "note": "The server has 70 passing tests (with real MP3 and WAV files), the platform script 6 and the progress script 4. The Flutter tests are written but not run yet."
+      "note": "The server has 98 passing tests (with real audio and both fingerprint tools), the platform script 6 and the progress script 4. The Flutter tests are written but not run yet."
     },
     "AUTH-01": {
       "status": "partial",
@@ -383,7 +383,7 @@
     },
     "STU-08": {
       "status": "partial",
-      "note": "Draft, publish, take offline and delete work (tested). Scheduling is missing."
+      "note": "Draft, submit for release, withdraw and delete work (tested). Scheduling is missing."
     },
     "STU-09": {
       "status": "partial",
@@ -456,6 +456,58 @@
     "PLY-13": {
       "status": "partial",
       "note": "Loudness is measured and sent to the app, but not applied to playback yet."
+    },
+    "STU-07": {
+      "status": "built",
+      "note": "Songs that sound like ones already on Vyro are put on hold, including re-encoded and trimmed copies (tested with real audio). The lookup against released music is wired in but only tested with a stand-in; it needs an AcoustID key or a paid service."
+    },
+    "BKE-06": {
+      "status": "partial",
+      "note": "Fingerprint matching against the catalog works (tested with fpcalc and with ffmpeg). Matching against released music needs a lookup service."
+    },
+    "ADM-01": {
+      "status": "partial",
+      "note": "Roles (user, moderator, admin) and an audit log are tested on the server, and the Admin console is built. The audit log has no screen yet."
+    },
+    "ADM-02": {
+      "status": "built",
+      "note": "Approve or reject with a reason the artist is told, one at a time or in bulk (server tested, screens built)."
+    },
+    "ADM-03": {
+      "status": "partial",
+      "note": "Search artists, verify, suspend and restore (server tested, screen built). Merging duplicate accounts is missing."
+    },
+    "ADM-12": {
+      "status": "built",
+      "note": "Reviewers listen to a song before deciding, through a private streaming link (server tested, screen built)."
+    },
+    "ADM-13": {
+      "status": "done",
+      "note": "Review policy: every song, only new artists, or none; unchecked audio never skips review (tested)."
+    },
+    "SAF-02": {
+      "status": "built",
+      "note": "Notices take a song offline at once, artists can counter, reviewers uphold or restore (server tested, screens built). The legal wording and time limits need a lawyer."
+    },
+    "SAF-03": {
+      "status": "partial",
+      "note": "A moderation queue for uploads. Profiles, images and comments are missing."
+    },
+    "SAF-14": {
+      "status": "partial",
+      "note": "Artists can answer a copyright notice with a counter-notice. Appeals of a rejection or an ownership dispute are missing."
+    },
+    "SAF-16": {
+      "status": "done",
+      "note": "Three upheld copyright notices suspend the artist automatically (tested)."
+    },
+    "SAF-17": {
+      "status": "done",
+      "note": "A suspended account is signed out everywhere, cannot sign in, and its songs are hidden (tested)."
+    },
+    "STU-21": {
+      "status": "done",
+      "note": "New audio takes a live song offline until it is reviewed again (tested)."
     }
   }
 }

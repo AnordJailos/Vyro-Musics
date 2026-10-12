@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../audio/playback_controller.dart';
 import '../brand/vyro_mark.dart';
+import '../lyrics/lyrics_provider.dart';
+import '../lyrics/lyrics_view.dart';
 import '../theme/vyro_theme.dart';
 
 String _fmt(Duration d) {
@@ -13,9 +15,10 @@ String _fmt(Duration d) {
 
 /// Compact player shown above the navigation bar while something is loaded.
 class MiniPlayer extends StatelessWidget {
-  const MiniPlayer({super.key, required this.controller});
+  const MiniPlayer({super.key, required this.controller, this.lyrics});
 
   final PlaybackController controller;
+  final LyricsProvider? lyrics;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +34,7 @@ class MiniPlayer extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 fullscreenDialog: true,
-                builder: (_) => NowPlayingPage(controller: controller),
+                builder: (_) => NowPlayingPage(controller: controller, lyrics: lyrics),
               ),
             ),
             child: Padding(
@@ -73,16 +76,41 @@ class MiniPlayer extends StatelessWidget {
   }
 }
 
-class NowPlayingPage extends StatelessWidget {
-  const NowPlayingPage({super.key, required this.controller});
+class NowPlayingPage extends StatefulWidget {
+  const NowPlayingPage({super.key, required this.controller, this.lyrics});
 
   final PlaybackController controller;
+
+  /// Where lyrics come from. Without it there is no lyrics button.
+  final LyricsProvider? lyrics;
+
+  @override
+  State<NowPlayingPage> createState() => _NowPlayingPageState();
+}
+
+class _NowPlayingPageState extends State<NowPlayingPage> {
+  bool _showLyrics = false;
+
+  PlaybackController get controller => widget.controller;
 
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    final lyrics = widget.lyrics;
     return Scaffold(
-      appBar: AppBar(title: const Text('Now playing')),
+      appBar: AppBar(
+        title: const Text('Now playing'),
+        actions: [
+          if (lyrics != null)
+            IconButton(
+              tooltip: _showLyrics ? 'Hide lyrics' : 'Show lyrics',
+              isSelected: _showLyrics,
+              icon: const Icon(Icons.lyrics_outlined),
+              selectedIcon: const Icon(Icons.lyrics_rounded),
+              onPressed: () => setState(() => _showLyrics = !_showLyrics),
+            ),
+        ],
+      ),
       body: ListenableBuilder(
         listenable: controller,
         builder: (context, _) {
@@ -91,19 +119,22 @@ class NowPlayingPage extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(24),
             children: [
-              Center(
-                child: Container(
-                  width: 240,
-                  height: 240,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: VyroColors.panel,
-                    borderRadius: BorderRadius.circular(32),
-                    border: Border.all(color: VyroColors.panelBorder),
+              if (_showLyrics && lyrics != null)
+                SizedBox(height: 320, child: LyricsView(controller: controller, provider: lyrics))
+              else
+                Center(
+                  child: Container(
+                    width: 240,
+                    height: 240,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: VyroColors.panel,
+                      borderRadius: BorderRadius.circular(32),
+                      border: Border.all(color: VyroColors.panelBorder),
+                    ),
+                    child: const VyroMark(size: 150),
                   ),
-                  child: const VyroMark(size: 150),
                 ),
-              ),
               const SizedBox(height: 24),
               Text(track?.title ?? 'Nothing playing', style: text.titleLarge, textAlign: TextAlign.center),
               const SizedBox(height: 4),

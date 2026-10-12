@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:vyro_music/auth/api_errors.dart';
 import 'package:vyro_music/catalog/catalog_api.dart';
+import 'package:vyro_music/lyrics/lyrics_models.dart';
 import 'package:vyro_music/catalog/catalog_models.dart';
 import 'package:vyro_music/studio/file_picker_service.dart';
 import 'package:vyro_music/studio/studio_api.dart';
@@ -24,6 +26,10 @@ class FakeCatalogApi implements CatalogApi {
   final List<CatalogTrack> all;
   Object? failWith;
   final searches = <String>[];
+  final lyricsByTrack = <String, Lyrics?>{};
+  final lyricsLookups = <String>[];
+  final reports = <String>[];
+  Object? lyricsFailure;
 
   T _go<T>(T v) {
     final e = failWith;
@@ -47,6 +53,17 @@ class FakeCatalogApi implements CatalogApi {
   Future<Uri> streamUri(String trackId) async => Uri.parse('http://localhost:3000/v1/stream/$trackId.token');
 
   @override
+  Future<Lyrics?> lyrics(String trackId) async {
+    lyricsLookups.add(trackId);
+    final e = lyricsFailure;
+    if (e != null) throw e;
+    return lyricsByTrack[trackId];
+  }
+
+  @override
+  Future<void> reportLyrics(String trackId, {String reason = 'other'}) async => reports.add('$trackId:$reason');
+
+  @override
   Uri coverUri(String coverPath) => Uri.parse('http://localhost:3000$coverPath');
 }
 
@@ -66,7 +83,7 @@ class FakeStudioApi implements StudioApi {
     return tracks[i];
   }
 
-  StudioTrack _copy(StudioTrack t, {String? status, bool? hasAudio, bool? hasCover, String? rejectReason}) => StudioTrack(
+  StudioTrack _copy(StudioTrack t, {String? status, bool? hasAudio, bool? hasCover, String? rejectReason, bool? hasLyrics}) => StudioTrack(
         id: t.id,
         title: t.title,
         status: status ?? t.status,
@@ -80,6 +97,7 @@ class FakeStudioApi implements StudioApi {
         bitrateKbps: hasAudio == true ? 192 : t.bitrateKbps,
         loudnessLufs: hasAudio == true ? -14.2 : t.loudnessLufs,
         rejectReason: rejectReason ?? t.rejectReason,
+        hasLyrics: hasLyrics ?? t.hasLyrics,
       );
 
   @override
@@ -129,6 +147,30 @@ class FakeStudioApi implements StudioApi {
     tracks.removeWhere((t) => t.id == trackId);
   }
 
+  final lyricsText = <String, String>{};
+
+  @override
+  Future<LyricsDraft?> lyrics(String trackId) async {
+    final text = lyricsText[trackId];
+    return text == null ? null : LyricsDraft(text: text, synced: parseLyrics(text).synced);
+  }
+
+  @override
+  Future<LyricsSaved> setLyrics(String trackId, String text) async {
+    calls.add('setLyrics');
+    lyricsText[trackId] = text;
+    _set(trackId, (t) => _copy(t, hasLyrics: true));
+    final parsed = parseLyrics(text);
+    return LyricsSaved(synced: parsed.synced, lineCount: parsed.lines.length);
+  }
+
+  @override
+  Future<void> removeLyrics(String trackId) async {
+    calls.add('removeLyrics');
+    lyricsText.remove(trackId);
+    _set(trackId, (t) => _copy(t, hasLyrics: false));
+  }
+
   @override
   Future<List<TakedownInfo>> takedowns() async => List.of(notices);
 
@@ -149,16 +191,26 @@ class FakeStudioApi implements StudioApi {
 }
 
 class FakePicker implements FilePickerService {
-  FakePicker({this.audio, this.image});
+  FakePicker({this.audio, this.image, this.lyrics});
 
   PickedFile? audio;
   PickedFile? image;
+  PickedFile? lyrics;
 
   @override
   Future<PickedFile?> pickAudio() async => audio;
 
   @override
   Future<PickedFile?> pickImage() async => image;
+
+  @override
+  Future<PickedFile?> pickLyrics() async => lyrics;
+}
+
+/// A text file the artist picked, such as a .lrc file.
+PickedFile pickedText(String name, String text) {
+  final bytes = utf8.encode(text);
+  return PickedFile(name: name, length: bytes.length, open: () => Stream.value(bytes));
 }
 
 PickedFile pickedFile(String name, int length) => PickedFile(name: name, length: length, open: () => Stream.value(List<int>.filled(length, 7)));

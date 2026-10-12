@@ -11,6 +11,11 @@ abstract class StudioApi {
   Future<StudioTrack> publish(String trackId);
   Future<StudioTrack> unpublish(String trackId);
   Future<void> deleteTrack(String trackId);
+
+  /// The lyrics the artist saved for a song, or null when there are none.
+  Future<LyricsDraft?> lyrics(String trackId);
+  Future<LyricsSaved> setLyrics(String trackId, String text);
+  Future<void> removeLyrics(String trackId);
   Future<List<TakedownInfo>> takedowns();
   Future<void> counterNotice(String noticeId, {required String statement, required String signature});
 }
@@ -91,6 +96,28 @@ class HttpStudioApi implements StudioApi {
   @override
   Future<void> deleteTrack(String trackId) async {
     await _client.send('DELETE', '/v1/artists/me/tracks/$trackId');
+  }
+
+  @override
+  Future<LyricsDraft?> lyrics(String trackId) async {
+    try {
+      final m = _map(await _client.send('GET', '/v1/artists/me/tracks/$trackId/lyrics'));
+      return LyricsDraft(text: m['text'] as String, synced: m['synced'] == true);
+    } on ApiException catch (e) {
+      if (e.status == 404) return null;
+      rethrow;
+    }
+  }
+
+  @override
+  Future<LyricsSaved> setLyrics(String trackId, String text) async {
+    final m = _map(await _client.send('PUT', '/v1/artists/me/tracks/$trackId/lyrics', body: {'text': text}));
+    return LyricsSaved(synced: m['synced'] == true, lineCount: (m['lineCount'] as num?)?.toInt() ?? 0);
+  }
+
+  @override
+  Future<void> removeLyrics(String trackId) async {
+    await _client.send('DELETE', '/v1/artists/me/tracks/$trackId/lyrics');
   }
 
   @override

@@ -10,6 +10,7 @@ import '../auth/screens/guest_prompt.dart';
 import '../brand/vyro_mark.dart';
 import '../catalog/catalog_api.dart';
 import '../history/history_store.dart';
+import '../lyrics/lyrics_provider.dart';
 import '../catalog/search_page.dart';
 import '../library/library_controller.dart';
 import '../library/library_page.dart';
@@ -61,6 +62,7 @@ class AppShell extends StatefulWidget {
     required this.picker,
     required this.admin,
     required this.history,
+    this.embeddedLyrics,
   });
 
   final ThemeController theme;
@@ -76,6 +78,9 @@ class AppShell extends StatefulWidget {
   final AdminApi admin;
   final HistoryStore history;
 
+  /// Reads lyrics stored inside audio files (null in tests).
+  final TextReader? embeddedLyrics;
+
   @override
   State<AppShell> createState() => _AppShellState();
 }
@@ -84,6 +89,7 @@ class _AppShellState extends State<AppShell> {
   int _index = 0;
   bool _artistMode = false;
   final StatsRepository _demoStats = DemoStatsRepository();
+  late final LyricsProvider _lyrics = LyricsProvider(catalog: widget.catalog, embedded: widget.embeddedLyrics);
 
   @override
   void initState() {
@@ -122,7 +128,7 @@ class _AppShellState extends State<AppShell> {
       case 'Studio':
         return StudioPage(studio: widget.studio, picker: widget.picker);
       case 'Releases':
-        return ReleasesPage(studio: widget.studio);
+        return ReleasesPage(studio: widget.studio, picker: widget.picker);
       case 'Library':
         return LibraryPage(library: widget.library, playback: widget.playback);
       case 'Profile':
@@ -237,7 +243,7 @@ class _AppShellState extends State<AppShell> {
           bottomNavigationBar: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              MiniPlayer(controller: widget.playback),
+              MiniPlayer(controller: widget.playback, lyrics: _lyrics),
               NavigationBar(
                 selectedIndex: _index,
                 onDestinationSelected: (i) => setState(() => _index = i),

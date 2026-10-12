@@ -13,6 +13,7 @@ class CatalogTrack {
     this.allowMixing = true,
     this.loudnessLufs,
     this.coverPath,
+    this.hasLyrics = false,
     this.rank,
     this.plays,
   });
@@ -27,6 +28,7 @@ class CatalogTrack {
   final bool allowMixing;
   final double? loudnessLufs;
   final String? coverPath;
+  final bool hasLyrics;
 
   /// Only on charts.
   final int? rank;
@@ -45,6 +47,7 @@ class CatalogTrack {
       allowMixing: j['allowMixing'] != false,
       loudnessLufs: (j['loudnessLufs'] as num?)?.toDouble(),
       coverPath: j['coverUrl'] as String?,
+      hasLyrics: j['hasLyrics'] == true,
       rank: (j['rank'] as num?)?.toInt(),
       plays: (j['plays'] as num?)?.toInt(),
     );

@@ -138,6 +138,21 @@ Nothing goes live unchecked. When an artist submits a song ("Submit for release"
   ACRCloud or Audible Magic behind the same interface); and anyone can send a notice, so decide how rights holders are
   verified before you rely on it.
 
+## Lyrics
+
+- **Artists** add lyrics in the Studio (Releases, then the song's menu, then **Add lyrics**): type or paste them, or import
+  a `.lrc` or `.txt` file. Lyrics with times in front of each line, like `[01:23.45] a line`, follow the music; lyrics
+  without times are shown as plain text. Several times on one line, an `[offset:+500]` tag and word-by-word stamps are
+  understood. Lyrics can be changed on a live song without taking it offline.
+- **Listeners** open the Now Playing screen and tap the lyrics button. The line being sung is highlighted and scrolled
+  into view, and tapping a line jumps to it. Lyrics of explicit songs follow the explicit-content setting. A flag button
+  lets a listener report wrong words, wrong timing, offensive content or copied lyrics; the artist is told once per person.
+- **Your own files** show lyrics from a `.lrc` file with the same name next to the song (then a `.txt`), or from lyrics
+  stored inside the file's tags.
+- **Not covered yet**: lyrics are not reviewed by a person (an artist could paste lyrics they do not own, so the editor
+  says only to add lyrics you have the right to share, and reports reach the artist, not a moderator), there is no tap-to-time
+  editor, and no translation.
+
 ## Listening history
 
 Every play is recorded on the device, with how long you really listened (a seek forward adds nothing, and pausing does not

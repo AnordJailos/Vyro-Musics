@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 /// One of the artist's own songs, as the Studio shows it.
 class StudioTrack {
   const StudioTrack({
@@ -16,6 +18,7 @@ class StudioTrack {
     this.loudnessLufs,
     this.rejectReason,
     this.reviewNote,
+    this.hasLyrics = false,
   });
 
   final String id;
@@ -33,6 +36,7 @@ class StudioTrack {
   final double? loudnessLufs;
   final String? rejectReason;
   final String? reviewNote;
+  final bool hasLyrics;
 
   bool get isLive => status == 'published';
 
@@ -70,6 +74,7 @@ class StudioTrack {
         loudnessLufs: (j['loudnessLufs'] as num?)?.toDouble(),
         rejectReason: j['rejectReason'] as String?,
         reviewNote: j['reviewNote'] as String?,
+        hasLyrics: j['hasLyrics'] == true,
       );
 }
 
@@ -105,6 +110,31 @@ class TakedownInfo {
       statement: (j['statement'] as String?) ?? '',
     );
   }
+}
+
+/// The lyrics an artist saved, as they wrote them.
+class LyricsDraft {
+  const LyricsDraft({required this.text, required this.synced});
+  final String text;
+  final bool synced;
+}
+
+/// What the server made of lyrics that were just saved.
+class LyricsSaved {
+  const LyricsSaved({required this.synced, required this.lineCount});
+  final bool synced;
+  final int lineCount;
+}
+
+/// Reads a small text file the artist chose (a .lrc or .txt file with lyrics).
+Future<String> readPickedText(PickedFile file, {int maxBytes = 200 * 1024}) async {
+  if (file.length > maxBytes) throw const FormatException('That file is too large to be lyrics.');
+  final bytes = <int>[];
+  await for (final chunk in file.open()) {
+    bytes.addAll(chunk);
+    if (bytes.length > maxBytes) throw const FormatException('That file is too large to be lyrics.');
+  }
+  return utf8.decode(bytes, allowMalformed: true).replaceFirst('\uFEFF', '');
 }
 
 /// A file the artist chose. Read as a stream, so large files never sit in memory.

@@ -23,6 +23,7 @@ import 'history/history_store.dart';
 import 'history/history_sync.dart';
 import 'history/local_stats.dart';
 import 'history/play_recorder.dart';
+import 'lyrics/lyrics_provider.dart' show TextReader;
 import 'library/device_library_platform.dart';
 import 'library/library_controller.dart';
 import 'library/library_models.dart' show TagInfo;
@@ -111,6 +112,7 @@ Future<void> main() async {
     picker: const DeviceFilePickerService(),
     admin: HttpAdminApi(client),
     history: history,
+    embeddedLyrics: readEmbeddedLyrics,
   ));
 }
 
@@ -127,6 +129,7 @@ class VyroApp extends StatefulWidget {
     this.picker = const NoFilePickerService(),
     this.admin = const OfflineAdminApi(),
     HistoryStore? history,
+    this.embeddedLyrics,
   })  : stats = stats ?? DemoStatsRepository(),
         library = library ?? LibraryController(store: MemoryLibraryStore(), scanner: LibraryScanner(readTags: _noTags)),
         history = history ?? MemoryHistoryStore(),
@@ -144,6 +147,7 @@ class VyroApp extends StatefulWidget {
   final FilePickerService picker;
   final AdminApi admin;
   final HistoryStore history;
+  final TextReader? embeddedLyrics;
 
   @override
   State<VyroApp> createState() => _VyroAppState();
@@ -184,6 +188,7 @@ class _VyroAppState extends State<VyroApp> {
             picker: widget.picker,
             admin: widget.admin,
             history: widget.history,
+            embeddedLyrics: widget.embeddedLyrics,
           ),
         ),
       ),

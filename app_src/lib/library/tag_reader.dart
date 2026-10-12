@@ -35,3 +35,15 @@ TagInfo? _readOne(String path) {
 Future<List<TagInfo?>> readTagsInIsolate(List<String> paths) {
   return Isolate.run(() => [for (final p in paths) _readOne(p)]);
 }
+
+/// Lyrics stored inside an audio file's tags, or null when there are none.
+Future<String?> readEmbeddedLyrics(String path) {
+  return Isolate.run(() {
+    try {
+      final text = readMetadata(File(path), getImage: false).lyrics?.trim();
+      return (text == null || text.isEmpty) ? null : text;
+    } catch (_) {
+      return null;
+    }
+  });
+}

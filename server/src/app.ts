@@ -14,6 +14,7 @@ import { registerTakedownRoutes } from './takedown_routes.js';
 import type { Ctx } from './context.js';
 import type { Db } from './db.js';
 import { makeSocialVerifier, type SocialVerifier } from './idtokens.js';
+import { registerLyricsRoutes } from './lyrics_routes.js';
 import { registerMeRoutes } from './me_routes.js';
 import { ConsoleMessenger, type Messenger } from './messaging.js';
 import { hashPassword, newRefreshToken, sha256, tokenKit } from './security.js';
@@ -172,6 +173,7 @@ export async function buildApp(deps: AppDeps) {
   registerAuthRoutes(ctx);
   registerMeRoutes(ctx);
   registerStudioRoutes(ctx);
+  registerLyricsRoutes(ctx);
   registerAdminRoutes(ctx);
   registerTakedownRoutes(ctx);
   registerCatalogRoutes(ctx);

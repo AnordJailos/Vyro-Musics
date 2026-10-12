@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../auth/screens/auth_widgets.dart' show showError, showNotice;
 import '../catalog/catalog_widgets.dart' show mmss;
+import 'file_picker_service.dart';
+import 'lyrics_editor_page.dart';
 import 'studio_api.dart';
 import 'studio_models.dart';
 
 /// The artist's own songs, with their status, and publish, take offline and delete.
 class ReleasesPage extends StatefulWidget {
-  const ReleasesPage({super.key, required this.studio});
+  const ReleasesPage({super.key, required this.studio, this.picker = const NoFilePickerService()});
 
   final StudioApi studio;
+  final FilePickerService picker;
 
   @override
   State<ReleasesPage> createState() => _ReleasesPageState();
@@ -30,6 +33,11 @@ class _ReleasesPageState extends State<ReleasesPage> {
       if (mounted) showError(context, e);
     }
     if (mounted) await _reload();
+  }
+
+  Future<void> _editLyrics(StudioTrack t) async {
+    final changed = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => LyricsEditorPage(studio: widget.studio, picker: widget.picker, track: t)));
+    if (changed == true && mounted) await _reload();
   }
 
   Future<void> _confirmDelete(StudioTrack t) async {
@@ -143,10 +151,12 @@ class _ReleasesPageState extends State<ReleasesPage> {
                       if (v == 'unpublish') _act(() => widget.studio.unpublish(t.id));
                       if (v == 'delete') _confirmDelete(t);
                       if (v == 'counter') _counterNotice(t);
+                      if (v == 'lyrics') _editLyrics(t);
                     },
                     itemBuilder: (_) => [
                       if (t.canSubmit) PopupMenuItem<String>(value: 'publish', child: Text(t.status == 'rejected' ? 'Fix and submit again' : 'Submit for release')),
                       if (t.isLive || t.isWaiting) PopupMenuItem<String>(value: 'unpublish', child: Text(t.isLive ? 'Take offline' : 'Withdraw from review')),
+                      PopupMenuItem<String>(value: 'lyrics', child: Text(t.hasLyrics ? 'Edit lyrics' : 'Add lyrics')),
                       if (t.isTakenDown) const PopupMenuItem<String>(value: 'counter', child: Text('Send a counter-notice')),
                       if (!t.isTakenDown) const PopupMenuItem<String>(value: 'delete', child: Text('Delete')),
                     ],

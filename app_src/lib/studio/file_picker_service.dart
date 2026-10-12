@@ -7,6 +7,7 @@ import 'studio_models.dart';
 abstract class FilePickerService {
   Future<PickedFile?> pickAudio();
   Future<PickedFile?> pickImage();
+  Future<PickedFile?> pickLyrics();
 }
 
 class NoFilePickerService implements FilePickerService {
@@ -17,6 +18,9 @@ class NoFilePickerService implements FilePickerService {
 
   @override
   Future<PickedFile?> pickImage() async => null;
+
+  @override
+  Future<PickedFile?> pickLyrics() async => null;
 }
 
 class DeviceFilePickerService implements FilePickerService {
@@ -36,4 +40,7 @@ class DeviceFilePickerService implements FilePickerService {
 
   @override
   Future<PickedFile?> pickImage() => _pick(const ['jpg', 'jpeg', 'png', 'webp']);
+
+  @override
+  Future<PickedFile?> pickLyrics() => _pick(const ['lrc', 'txt']);
 }

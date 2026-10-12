@@ -1,8 +1,8 @@
 # Vyro Music: Product Requirements
 
-**Version 0.8 · 10 October 2026 · Status: for review**
+**Version 0.9 · 12 October 2026 · Status: for review**
 
-*Changes in v0.8: listening history built (new REC-18, REC-19, PRF-12). v0.7: review before release, copyright checks, takedowns and suspensions built (new STU-21, ADM-12, ADM-13, SAF-16, SAF-17). v0.6: catalog, Studio uploads and streaming built (new STU-19, STU-20). v0.5: login and account screens built (new AUTH-15 to AUTH-18). v0.4: background playback and local library built (new LIB-16, LIB-17, PLY-20, DEV-14, DEV-15). v0.3: statistics redesigned from the best of Spotify, Apple Music, YouTube Studio, Audiomack, stats.fm and Last.fm (STA-16 to STA-20, new module PRF for listener profiles). v0.2: Normal and Mixing playback modes (MIX-21 to MIX-23), one codebase for desktop (DEV-12, DEV-13).*
+*Changes in v0.9: lyrics built (new LYR-15). v0.8: listening history built (new REC-18, REC-19, PRF-12). v0.7: review before release, copyright checks, takedowns and suspensions built (new STU-21, ADM-12, ADM-13, SAF-16, SAF-17). v0.6: catalog, Studio uploads and streaming built (new STU-19, STU-20). v0.5: login and account screens built (new AUTH-15 to AUTH-18). v0.4: background playback and local library built (new LIB-16, LIB-17, PLY-20, DEV-14, DEV-15). v0.3: statistics redesigned from the best of Spotify, Apple Music, YouTube Studio, Audiomack, stats.fm and Last.fm (STA-16 to STA-20, new module PRF for listener profiles). v0.2: Normal and Mixing playback modes (MIX-21 to MIX-23), one codebase for desktop (DEV-12, DEV-13).*
 
 ## 1. Vision
 
@@ -215,6 +215,7 @@ Each requirement has an ID, a phase tag and a checkbox.
 - [ ] **LYR-12** [3] Karaoke mode with vocal reduction where stems are available and the artist allows it.
 - [ ] **LYR-13** [3] Floating lyrics overlay on Android.
 - [ ] **LYR-14** [4] Licensed lyrics provider for the wider catalog.
+- [ ] **LYR-15** [2] Lyrics of explicit songs are hidden from people who have explicit content turned off.
 
 ### OFF: Offline and downloads
 *Inspired by Audiomack, Apple Music, Spotify*

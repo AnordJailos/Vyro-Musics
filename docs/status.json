@@ -1,10 +1,10 @@
 {
   "meta": {
-    "updated": "10 October 2026",
+    "updated": "12 October 2026",
     "next": [
       "Run ./setup.sh on your machine and report what flutter analyze and flutter test say. Until then, every Built item is unconfirmed (there is a lot of it now).",
-      "Before opening to the public: connect an email and SMS provider, set ADMIN_EMAILS, choose a copyright lookup service you may use commercially, and have a lawyer review the notice process.",
-      "Synced lyrics and offline downloads.",
+      "Before opening to the public: connect an email and SMS provider, set ADMIN_EMAILS, choose a copyright lookup service you may use commercially, have a lawyer review the notice process, and decide how lyrics will be reviewed.",
+      "Offline downloads, with encrypted storage and a download queue.",
       "Recommendations (\"made for you\"), now that plays are recorded."
     ]
   },
@@ -323,7 +323,7 @@
     },
     "NFR-10": {
       "status": "partial",
-      "note": "The server has 98 passing tests (with real audio and both fingerprint tools), the platform script 6 and the progress script 4. The Flutter tests are written but not run yet."
+      "note": "The server has 118 passing tests (with real audio and both fingerprint tools), the platform script 6 and the progress script 4. The Flutter tests are written but not run yet."
     },
     "AUTH-01": {
       "status": "partial",
@@ -524,6 +524,42 @@
     "PRF-12": {
       "status": "built",
       "note": "Clear listening history on the Account screen (test written)."
+    },
+    "LYR-01": {
+      "status": "built",
+      "note": "The line being sung is highlighted and scrolled into view (tests written, not run yet)."
+    },
+    "LYR-02": {
+      "status": "partial",
+      "note": "Lyrics open inside the Now Playing screen, and tapping a line jumps to it. There is no separate full-screen view."
+    },
+    "LYR-03": {
+      "status": "built",
+      "note": "Lyrics without times are shown as plain text, with verse breaks kept."
+    },
+    "LYR-04": {
+      "status": "built",
+      "note": "Songs on the device use a .lrc or .txt file with the same name, or lyrics stored inside the file."
+    },
+    "LYR-05": {
+      "status": "built",
+      "note": "Artists add, edit and remove lyrics in the Studio (server tested; screens and tests written)."
+    },
+    "LYR-06": {
+      "status": "partial",
+      "note": "Lyrics follow the song that is showing, including through a blend. Tempo changes do not exist yet."
+    },
+    "LYR-07": {
+      "status": "built",
+      "note": "Listeners report wrong words, timing, offensive or copied lyrics; the artist is told once per person (server tested)."
+    },
+    "LYR-15": {
+      "status": "done",
+      "note": "Lyrics of explicit songs follow the explicit setting, for guests and minors too (server tested)."
+    },
+    "STU-10": {
+      "status": "partial",
+      "note": "Artists can write, paste or import .lrc lyrics. There is no tap-to-time editor yet."
     }
   }
 }

@@ -57,7 +57,7 @@ class _HomePageState extends State<HomePage> {
             return Column(
               children: [
                 for (var i = 0; i < shown.length; i++)
-                  CatalogTrackTile(track: shown[i], catalog: widget.catalog, onTap: () => _play(shown, i, origin)),
+                  CatalogTrackTile(track: shown[i], catalog: widget.catalog, playback: widget.controller, onTap: () => _play(shown, i, origin)),
               ],
             );
           },

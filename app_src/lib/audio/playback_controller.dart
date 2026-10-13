@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import 'deck.dart';
 import 'fade.dart';
+import 'playback_snapshot.dart';
 import 'track.dart';
 
 /// NORMAL: tracks change one after another, with no overlap.
@@ -50,11 +51,17 @@ class PlaybackController extends ChangeNotifier {
     this.describeError,
     this.onPlayEnded,
     DateTime Function()? clock,
+    math.Random? random,
+    this.retryDelays = const [Duration(seconds: 1), Duration(seconds: 2), Duration(seconds: 4)],
+    this.isRetryable,
   })  : _decks = [deckA, deckB],
-        _clock = clock ?? DateTime.now {
+        _clock = clock ?? DateTime.now,
+        _random = random ?? math.Random() {
     for (var i = 0; i < 2; i++) {
       _subs.add(_decks[i].positionStream.listen((p) => _onPosition(i, p)));
       _subs.add(_decks[i].completedStream.listen((_) => _onCompleted(i)));
+      _subs.add(_decks[i].bufferingStream.listen((b) => _onBuffering(i, b)));
+      _subs.add(_decks[i].errorStream.listen((e) => _onDeckError(i, e)));
     }
   }
 
@@ -73,6 +80,31 @@ class PlaybackController extends ChangeNotifier {
   final DateTime Function() _clock;
   String _origin = 'direct';
   final List<_Session?> _sessions = [null, null];
+  final math.Random _random;
+
+  /// How long to wait before each new attempt when the connection is lost in the middle of a song.
+  final List<Duration> retryDelays;
+
+  /// Whether an error is worth trying again (a lost connection is, a "not allowed" is not). Defaults to yes.
+  final bool Function(Object error)? isRetryable;
+
+  // Every queue entry has its own number, so the same song queued twice can be told apart, and the original
+  // order can be brought back when shuffle is switched off.
+  List<int> _ids = const [];
+  List<int> _originalIds = const [];
+  int _nextUid = 1;
+  bool _shuffle = false;
+  final List<Track> _history = [];
+  final List<bool> _buffering = [false, false];
+  Timer? _retryTimer;
+  int _retryAttempt = 0;
+  bool _retrying = false;
+  Duration _resumeAt = Duration.zero;
+
+  // After restoring a saved queue, or after giving up on a lost connection, nothing is loaded in the deck yet.
+  // The next press of play loads the song and jumps to where it was.
+  bool _needsLoad = false;
+  Duration _pendingSeek = Duration.zero;
   final List<Deck> _decks;
   final List<StreamSubscription<Object?>> _subs = [];
 
@@ -117,6 +149,21 @@ class PlaybackController extends ChangeNotifier {
   double get autoSeconds => _autoSeconds;
   double get manualSeconds => _manualSeconds;
   String? get error => _error;
+  bool get shuffle => _shuffle;
+
+  /// One number per queue entry, in queue order: stable keys for lists on screen.
+  List<int> get queueIds => _ids;
+
+  /// Songs already played, most recent first.
+  List<Track> get history => List<Track>.unmodifiable(_history.reversed);
+
+  /// Waiting for audio to arrive (not shown while paused).
+  bool get isBuffering => _playing && _buffering[_displayDeck];
+
+  /// The connection was lost and the player is trying again.
+  bool get isRetrying => _retrying;
+
+  Duration get _livePosition => _needsLoad ? _pendingSeek : _decks[_active].position;
 
   int get _displayDeck {
     final f = _fade;
@@ -162,37 +209,52 @@ class PlaybackController extends ChangeNotifier {
   // ---- commands -----------------------------------------------------------
 
   Future<void> setQueue(List<Track> tracks, {int startIndex = 0, bool autoPlay = true, String origin = 'direct'}) {
-    return _enqueue(() async {
-      _commitFade();
-      _origin = origin;
-      _queue = List<Track>.unmodifiable(tracks);
-      await _decks[1 - _active].stop();
-      if (tracks.isEmpty) {
-        _endSession(0);
-        _endSession(1);
-        _index = -1;
-        _playing = false;
-        await _decks[_active].stop();
-        position.value = Duration.zero;
-        notifyListeners();
-        return;
-      }
-      _playing = autoPlay;
-      await _cutTo(math.max(0, math.min(startIndex, tracks.length - 1)));
-    });
+    return _enqueue(() => _setQueueNow(tracks, startIndex, autoPlay, origin));
+  }
+
+  Future<void> _setQueueNow(List<Track> tracks, int startIndex, bool autoPlay, String origin) async {
+    _commitFade();
+    _cancelRetry();
+    _origin = origin;
+    final leaving = current;
+    if (leaving != null) _remember(leaving);
+    _setQueueState(tracks);
+    _originalIds = List<int>.of(_ids);
+    await _decks[1 - _active].stop();
+    if (tracks.isEmpty) {
+      _endSession(0);
+      _endSession(1);
+      _index = -1;
+      _playing = false;
+      _needsLoad = false;
+      _originalIds = const [];
+      await _decks[_active].stop();
+      position.value = Duration.zero;
+      notifyListeners();
+      return;
+    }
+    _playing = autoPlay;
+    var start = math.max(0, math.min(startIndex, tracks.length - 1));
+    if (_shuffle) start = _shuffleKeeping(start);
+    await _cutTo(start);
   }
 
   Future<void> play() => _enqueue(() async {
         if (current == null) return;
         _playing = true;
-        await _decks[_active].play();
+        if (_needsLoad) {
+          await _loadForResume();
+        } else {
+          await _decks[_active].play();
+        }
         notifyListeners();
       });
 
   Future<void> pause() => _enqueue(() async {
         _commitFade();
+        _cancelRetry();
         _playing = false;
-        await _decks[_active].pause();
+        if (!_needsLoad) await _decks[_active].pause();
         notifyListeners();
       });
 
@@ -213,10 +275,9 @@ class PlaybackController extends ChangeNotifier {
         if (current == null) return;
         _commitFade();
         final target = _previousIndex();
-        if (_decks[_active].position > _restartThreshold || target == null) {
+        if (_livePosition > _restartThreshold || target == null) {
           _autoMixScheduled = false;
-          await _decks[_active].seek(Duration.zero);
-          position.value = Duration.zero;
+          await _seekNow(Duration.zero);
           return;
         }
         await _transitionTo(target, manual: true);
@@ -225,9 +286,156 @@ class PlaybackController extends ChangeNotifier {
   Future<void> seek(Duration to) => _enqueue(() async {
         _commitFade();
         _autoMixScheduled = false;
-        await _decks[_active].seek(to);
-        position.value = to;
+        await _seekNow(to);
       });
+
+  Future<void> _seekNow(Duration to) async {
+    if (_needsLoad) {
+      _pendingSeek = to; // nothing is loaded yet; the jump happens when playback starts
+    } else {
+      await _decks[_active].seek(to);
+    }
+    position.value = to;
+  }
+
+  // ---- shuffle and the queue ----------------------------------------------
+
+  /// Plays the queue in a random order, starting with the song that is playing now. Switching it off puts the
+  /// queue back in the order it had.
+  Future<void> setShuffle(bool value) => _enqueue(() async {
+        _commitFade();
+        if (value == _shuffle) return;
+        _shuffle = value;
+        if (_index >= 0 && _queue.isNotEmpty) {
+          if (value) {
+            _originalIds = List<int>.of(_ids);
+            _index = _shuffleKeeping(_index);
+          } else {
+            _restoreOriginalOrder();
+          }
+        } else {
+          _originalIds = value ? List<int>.of(_ids) : const [];
+        }
+        _autoMixScheduled = false; // the song that comes next may have changed
+        notifyListeners();
+      });
+
+  /// Puts the song at [keep] first and everything else in random order. Returns the new index of that song (0).
+  int _shuffleKeeping(int keep) {
+    final rest = [for (var i = 0; i < _queue.length; i++) if (i != keep) i];
+    for (var i = rest.length - 1; i > 0; i--) {
+      final j = _random.nextInt(i + 1);
+      final swap = rest[i];
+      rest[i] = rest[j];
+      rest[j] = swap;
+    }
+    final order = [keep, ...rest];
+    _queue = List<Track>.unmodifiable([for (final i in order) _queue[i]]);
+    _ids = [for (final i in order) _ids[i]];
+    return 0;
+  }
+
+  void _restoreOriginalOrder() {
+    final uid = _ids[_index];
+    final rank = {for (var i = 0; i < _originalIds.length; i++) _originalIds[i]: i};
+    final order = List<int>.generate(_queue.length, (i) => i)..sort((a, b) => (rank[_ids[a]] ?? 1 << 30).compareTo(rank[_ids[b]] ?? 1 << 30));
+    _queue = List<Track>.unmodifiable([for (final i in order) _queue[i]]);
+    _ids = [for (final i in order) _ids[i]];
+    _index = _ids.indexOf(uid);
+    _originalIds = const [];
+  }
+
+  void _setQueueState(List<Track> tracks) {
+    _queue = List<Track>.unmodifiable(tracks);
+    _ids = [for (var i = 0; i < tracks.length; i++) _nextUid++];
+  }
+
+  void _insertAt(int at, Track track, {required bool afterCurrent}) {
+    final uid = _nextUid++;
+    _queue = List<Track>.unmodifiable([..._queue.sublist(0, at), track, ..._queue.sublist(at)]);
+    _ids = [..._ids.sublist(0, at), uid, ..._ids.sublist(at)];
+    if (_shuffle) {
+      // In the original order the new song goes right after the one playing now (or at the end).
+      final anchor = afterCurrent && _index >= 0 ? _originalIds.indexOf(_ids[_index]) + 1 : _originalIds.length;
+      _originalIds = [..._originalIds.sublist(0, anchor), uid, ..._originalIds.sublist(anchor)];
+    }
+  }
+
+  /// Plays [track] right after the song that is playing now. With nothing playing, it starts playing.
+  Future<void> playNext(Track track) => _enqueue(() async {
+        _commitFade();
+        if (current == null) return _setQueueNow([track], 0, true, _origin);
+        _insertAt(_index + 1, track, afterCurrent: true);
+        _autoMixScheduled = false;
+        notifyListeners();
+      });
+
+  /// Adds [track] to the end of the queue. With nothing playing, it starts playing.
+  Future<void> addToQueue(Track track) => _enqueue(() async {
+        _commitFade();
+        if (current == null) return _setQueueNow([track], 0, true, _origin);
+        _insertAt(_queue.length, track, afterCurrent: false);
+        notifyListeners();
+      });
+
+  /// Takes a song out of the queue. The song that is playing now cannot be removed.
+  Future<void> removeFromQueue(int index) => _enqueue(() async {
+        _commitFade();
+        if (index < 0 || index >= _queue.length || index == _index) return;
+        final uid = _ids[index];
+        _queue = List<Track>.unmodifiable([..._queue.sublist(0, index), ..._queue.sublist(index + 1)]);
+        _ids = [..._ids.sublist(0, index), ..._ids.sublist(index + 1)];
+        if (index < _index) _index--;
+        if (_shuffle) _originalIds = [for (final u in _originalIds) if (u != uid) u];
+        _autoMixScheduled = false;
+        notifyListeners();
+      });
+
+  /// Moves a song that is still to come to another place among the songs still to come ([to] is its new index).
+  Future<void> moveInQueue(int from, int to) => _enqueue(() async {
+        _commitFade();
+        if (from <= _index || to <= _index || from >= _queue.length || to >= _queue.length || from == to) return;
+        final list = [..._queue];
+        final ids = [..._ids];
+        list.insert(to, list.removeAt(from));
+        ids.insert(to, ids.removeAt(from));
+        _queue = List<Track>.unmodifiable(list);
+        _ids = ids;
+        _autoMixScheduled = false;
+        notifyListeners();
+      });
+
+  /// Empties the queue after the song that is playing now.
+  Future<void> clearUpcoming() => _enqueue(() async {
+        _commitFade();
+        if (_index < 0 || _index >= _queue.length - 1) return;
+        final gone = _ids.sublist(_index + 1).toSet();
+        _queue = List<Track>.unmodifiable(_queue.sublist(0, _index + 1));
+        _ids = _ids.sublist(0, _index + 1);
+        if (_shuffle) _originalIds = [for (final u in _originalIds) if (!gone.contains(u)) u];
+        _autoMixScheduled = false;
+        notifyListeners();
+      });
+
+  /// Plays the song at [index] of the queue now (blended in Mixing mode).
+  Future<void> jumpTo(int index) => _enqueue(() async {
+        _commitFade();
+        if (index < 0 || index >= _queue.length || index == _index) return;
+        await _transitionTo(index, manual: true);
+      });
+
+  /// Plays [track] now by putting it next in the queue and moving on to it (used for the history).
+  Future<void> playNow(Track track) => _enqueue(() async {
+        _commitFade();
+        if (current == null) return _setQueueNow([track], 0, true, _origin);
+        _insertAt(_index + 1, track, afterCurrent: true);
+        await _transitionTo(_index + 1, manual: true);
+      });
+
+  void _remember(Track track) {
+    _history.add(track);
+    if (_history.length > 100) _history.removeAt(0);
+  }
 
   // ---- navigation helpers -------------------------------------------------
 
@@ -264,6 +472,7 @@ class PlaybackController extends ChangeNotifier {
   Future<void> _transitionTo(int target, {required bool manual}) async {
     _commitFade();
     final from = current;
+    if (from != null && target != _index) _remember(from);
     final to = _queue[target];
     final blend = _mode == PlaybackMode.mixing &&
         _playing &&
@@ -280,6 +489,8 @@ class PlaybackController extends ChangeNotifier {
   /// Plain change on the active deck: no overlap.
   Future<void> _cutTo(int target) async {
     final deck = _decks[_active];
+    _cancelRetry();
+    _needsLoad = false;
     _endSession(0);
     _endSession(1);
     _startSession(_active, _queue[target]);
@@ -289,7 +500,21 @@ class PlaybackController extends ChangeNotifier {
     notifyListeners();
     await deck.stop();
     await deck.setVolume(1);
-    await deck.load(_queue[target]);
+    try {
+      await deck.load(_queue[target]);
+    } catch (e) {
+      if (_queue[target].source != TrackSource.local && _canRetry(e)) {
+        // Probably the connection: keep the song selected and try again shortly.
+        _needsLoad = true;
+        _pendingSeek = Duration.zero;
+        _resumeAt = Duration.zero;
+        _scheduleRetry();
+        return;
+      }
+      _playing = false;
+      notifyListeners();
+      rethrow;
+    }
     if (_playing) await deck.play();
   }
 
@@ -417,6 +642,162 @@ class PlaybackController extends ChangeNotifier {
     await _transitionTo(target, manual: false);
   }
 
+  // ---- connection trouble, buffering and resuming -------------------------
+
+  bool _canRetry(Object error) => isRetryable?.call(error) ?? true;
+
+  void _onBuffering(int deck, bool value) {
+    if (_buffering[deck] == value) return;
+    _buffering[deck] = value;
+    if (deck == _displayDeck) notifyListeners();
+  }
+
+  void _onDeckError(int deck, Object error) {
+    if (deck != _active || _fade != null || current == null || _needsLoad) return;
+    if (current!.source == TrackSource.local || !_canRetry(error)) {
+      _failPlayback(describeError?.call(error) ?? 'Could not play that song.');
+      return;
+    }
+    if (_retryTimer != null) return; // already waiting to try again
+    final at = _decks[deck].position;
+    _resumeAt = at > Duration.zero ? at : position.value;
+    _scheduleRetry();
+  }
+
+  void _failPlayback(String message) {
+    _error = message;
+    _playing = false;
+    notifyListeners();
+    unawaited(_enqueue(() => _decks[_active].pause()));
+  }
+
+  // Tries again after 1, 2 and 4 seconds, then gives up and leaves the song ready: the next press of play
+  // loads it again and jumps to where it stopped. (The address of a streamed song is asked for again each time,
+  // because the old one may have expired.)
+  void _scheduleRetry() {
+    if (_retryAttempt >= retryDelays.length) {
+      _retryAttempt = 0;
+      _retrying = false;
+      _needsLoad = true;
+      _pendingSeek = _resumeAt;
+      _playing = false;
+      _error = 'Lost the connection. Press play to try again.';
+      notifyListeners();
+      unawaited(_enqueue(() async => _decks[_active].pause()));
+      return;
+    }
+    _retrying = true;
+    notifyListeners();
+    final delay = retryDelays[_retryAttempt++];
+    _retryTimer = Timer(delay, () {
+      _retryTimer = null;
+      unawaited(_enqueue(_attemptResume));
+    });
+  }
+
+  Future<void> _attemptResume() async {
+    if (!_retrying) return; // the listener did something else in the meantime
+    final track = current;
+    if (track == null) {
+      _cancelRetry();
+      return;
+    }
+    final deck = _decks[_active];
+    try {
+      await deck.stop();
+      await deck.setVolume(1);
+      await deck.load(track);
+      if (_resumeAt > Duration.zero) await deck.seek(_resumeAt);
+      _retryAttempt = 0;
+      _retrying = false;
+      _needsLoad = false;
+      _error = null;
+      position.value = _resumeAt;
+      if (_playing) await deck.play();
+      notifyListeners();
+    } catch (e) {
+      if (_canRetry(e)) {
+        _scheduleRetry();
+      } else {
+        _retrying = false;
+        _failPlayback(describeError?.call(e) ?? 'Could not play that song.');
+      }
+    }
+  }
+
+  void _cancelRetry() {
+    _retryTimer?.cancel();
+    _retryTimer = null;
+    _retryAttempt = 0;
+    _retrying = false;
+  }
+
+  /// Loads the current song and jumps to where it was left (after a restart, or after a lost connection).
+  Future<void> _loadForResume() async {
+    final deck = _decks[_active];
+    final track = current!;
+    final at = _pendingSeek;
+    _cancelRetry();
+    _error = null;
+    if (_sessions[_active] == null) _startSession(_active, track);
+    try {
+      await deck.stop();
+      await deck.setVolume(1);
+      await deck.load(track);
+      if (at > Duration.zero) await deck.seek(at);
+      _needsLoad = false;
+      position.value = at;
+      if (_playing) await deck.play();
+    } catch (e) {
+      if (track.source != TrackSource.local && _canRetry(e)) {
+        _resumeAt = at;
+        _scheduleRetry();
+      } else {
+        _playing = false;
+        rethrow;
+      }
+    }
+  }
+
+  /// Everything needed to bring the player back as it is now.
+  PlaybackSnapshot snapshot() => PlaybackSnapshot(
+        queue: _queue,
+        ids: _ids,
+        originalIds: _originalIds,
+        index: _index,
+        position: _needsLoad ? _pendingSeek : position.value,
+        shuffle: _shuffle,
+        repeat: _repeat,
+        mode: _mode,
+        autoSeconds: _autoSeconds,
+        manualSeconds: _manualSeconds,
+        origin: _origin,
+      );
+
+  /// Brings back a saved queue, ready and paused at the saved position. Nothing is loaded until play is pressed,
+  /// so starting the app does not need the network.
+  Future<void> restore(PlaybackSnapshot saved) => _enqueue(() async {
+        if (saved.queue.isEmpty || _queue.isNotEmpty) return; // never replaces something already playing
+        _commitFade();
+        _cancelRetry();
+        _queue = List<Track>.unmodifiable(saved.queue);
+        _ids = List<int>.of(saved.ids);
+        _originalIds = List<int>.of(saved.originalIds);
+        _nextUid = ([0, ..._ids].reduce(math.max)) + 1;
+        _index = math.max(0, math.min(saved.index, _queue.length - 1));
+        _shuffle = saved.shuffle;
+        _repeat = saved.repeat;
+        _mode = saved.mode;
+        _autoSeconds = _clampSeconds(saved.autoSeconds);
+        _manualSeconds = _clampSeconds(saved.manualSeconds);
+        _origin = saved.origin;
+        _playing = false;
+        _needsLoad = true;
+        _pendingSeek = saved.position;
+        position.value = saved.position;
+        notifyListeners();
+      });
+
   // ---- listening history ---------------------------------------------------
 
   void _startSession(int deck, Track track) {
@@ -450,6 +831,7 @@ class PlaybackController extends ChangeNotifier {
   @override
   void dispose() {
     _fadeTimer?.cancel();
+    _retryTimer?.cancel();
     for (final s in _subs) {
       unawaited(s.cancel());
     }

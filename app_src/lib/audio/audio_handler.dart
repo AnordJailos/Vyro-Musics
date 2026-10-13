@@ -48,7 +48,13 @@ class VyroAudioHandler extends BaseAudioHandler with SeekHandler {
           if (playing) MediaControl.pause else MediaControl.play,
           MediaControl.skipToNext,
         ],
-        systemActions: const {MediaAction.seek},
+        systemActions: const {MediaAction.seek, MediaAction.setShuffleMode, MediaAction.setRepeatMode},
+        shuffleMode: _controller.shuffle ? AudioServiceShuffleMode.all : AudioServiceShuffleMode.none,
+        repeatMode: switch (_controller.repeat) {
+          RepeatMode.off => AudioServiceRepeatMode.none,
+          RepeatMode.one => AudioServiceRepeatMode.one,
+          RepeatMode.all => AudioServiceRepeatMode.all,
+        },
         androidCompactActionIndices: const [0, 1, 2],
         processingState: track == null ? AudioProcessingState.idle : AudioProcessingState.ready,
         playing: playing,
@@ -76,6 +82,18 @@ class VyroAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> skipToPrevious() => _controller.previous();
+
+  @override
+  Future<void> setShuffleMode(AudioServiceShuffleMode shuffleMode) => _controller.setShuffle(shuffleMode != AudioServiceShuffleMode.none);
+
+  @override
+  Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
+    _controller.setRepeat(switch (repeatMode) {
+      AudioServiceRepeatMode.none => RepeatMode.off,
+      AudioServiceRepeatMode.one => RepeatMode.one,
+      _ => RepeatMode.all,
+    });
+  }
 
   @override
   Future<void> seek(Duration position) async {

@@ -18,6 +18,8 @@ import 'auth/auth_controller.dart';
 import 'auth/screens/auth_gate.dart';
 import 'auth/social_sign_in.dart';
 import 'auth/token_store.dart';
+import 'audio/playback_store.dart';
+import 'audio/track.dart' show TrackSource;
 import 'catalog/catalog_api.dart';
 import 'history/history_store.dart';
 import 'history/history_sync.dart';
@@ -52,6 +54,8 @@ Future<void> main() async {
     deckA: JustAudioDeck(),
     deckB: JustAudioDeck(),
     describeError: (e) => e is ApiException ? e.message : 'Could not play that song.',
+    // A lost connection or a busy server is worth trying again; "not allowed" or "not found" is not.
+    isRetryable: (e) => e is! ApiException || e.status == 0 || e.status == 408 || e.status == 429 || e.status >= 500,
     onPlayEnded: (play) => unawaited(recorder.record(play)),
   );
 
@@ -101,13 +105,23 @@ Future<void> main() async {
   });
   unawaited(auth.restore());
 
+  // Bring back the queue and the place in the song from last time, paused and ready. Nothing is loaded until
+  // play is pressed, so starting the app does not need the network.
+  final catalog = HttpCatalogApi(client);
+  final playbackStore = FilePlaybackStore(
+    attach: (t) => t.source == TrackSource.vyro && t.id.startsWith('vyro:') ? t.withResolveUri(() => catalog.streamUri(t.id.substring(5))) : t,
+  );
+  final saved = await playbackStore.load();
+  if (saved != null) await playback.restore(saved);
+  PlaybackPersistor(controller: playback, store: playbackStore).start();
+
   runApp(VyroApp(
     playback: playback,
     library: library,
     auth: auth,
     stats: MergedStatsRepository(server: ApiStatsRepository(client), store: history),
     social: const UnconfiguredSocialSignIn(),
-    catalog: HttpCatalogApi(client),
+    catalog: catalog,
     studio: HttpStudioApi(client),
     picker: const DeviceFilePickerService(),
     admin: HttpAdminApi(client),

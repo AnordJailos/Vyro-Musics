@@ -8,7 +8,13 @@ import 'track.dart';
 /// Deck backed by just_audio (Android, iOS, macOS natively; Windows through
 /// just_audio_media_kit, which is initialized in main.dart).
 class JustAudioDeck implements Deck {
+  JustAudioDeck() {
+    // just_audio reports playback failures as errors on this stream.
+    _player.playbackEventStream.listen((_) {}, onError: (Object error, StackTrace _) => _errors.add(error));
+  }
+
   final AudioPlayer _player = AudioPlayer();
+  final StreamController<Object> _errors = StreamController<Object>.broadcast();
 
   @override
   Future<void> load(Track track) async {
@@ -55,5 +61,14 @@ class JustAudioDeck implements Deck {
       .map((_) {});
 
   @override
-  Future<void> dispose() => _player.dispose();
+  Stream<bool> get bufferingStream => _player.processingStateStream.map((s) => s == ProcessingState.loading || s == ProcessingState.buffering).distinct();
+
+  @override
+  Stream<Object> get errorStream => _errors.stream;
+
+  @override
+  Future<void> dispose() async {
+    await _errors.close();
+    await _player.dispose();
+  }
 }

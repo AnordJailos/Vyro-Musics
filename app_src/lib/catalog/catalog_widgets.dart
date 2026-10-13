@@ -1,3 +1,5 @@
+import '../audio/playback_controller.dart';
+import '../shell/queue_menu.dart';
 import 'package:flutter/material.dart';
 
 import 'catalog_api.dart';
@@ -27,11 +29,14 @@ String mmss(int ms) {
 }
 
 class CatalogTrackTile extends StatelessWidget {
-  const CatalogTrackTile({super.key, required this.track, required this.catalog, required this.onTap});
+  const CatalogTrackTile({super.key, required this.track, required this.catalog, required this.onTap, this.playback});
 
   final CatalogTrack track;
   final CatalogApi catalog;
   final VoidCallback onTap;
+
+  /// When given, the row has a menu to play the song next or add it to the queue.
+  final PlaybackController? playback;
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +64,7 @@ class CatalogTrackTile extends StatelessWidget {
           const SourceBadge('Vyro'),
           const SizedBox(width: 8),
           Text(mmss(track.durationMs), style: Theme.of(context).textTheme.bodySmall),
+          if (playback != null) QueueMenuButton(playback: playback!, label: track.title, track: () => track.toPlayable(catalog.streamUri)),
         ],
       ),
       onTap: onTap,

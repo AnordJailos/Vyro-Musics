@@ -280,7 +280,7 @@ class _TakedownsTabState extends State<_TakedownsTab> {
   late Future<List<TakedownNotice>> _future = widget.admin.takedowns();
 
   Future<void> _reload() async {
-    setState(() => _future = widget.admin.takedowns());
+    setState(() { _future = widget.admin.takedowns(); });
     await _future.catchError((_) => <TakedownNotice>[]);
   }
 
@@ -396,7 +396,7 @@ class _ArtistsTabState extends State<_ArtistsTab> {
   }
 
   Future<void> _reload() async {
-    setState(() => _future = widget.admin.artists(_query));
+    setState(() { _future = widget.admin.artists(_query); });
     await _future.catchError((_) => <AdminArtist>[]);
   }
 

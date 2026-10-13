@@ -36,6 +36,22 @@ class Track {
   /// False for demo songs and reviewer previews, which must not show up in anyone's listening history.
   final bool countsAsListening;
 
+  /// The same song with another way of finding its address (used when a saved queue is brought back).
+  Track withResolveUri(Future<Uri> Function()? resolver) => Track(
+        id: id,
+        title: title,
+        artist: artist,
+        uri: uri,
+        source: source,
+        duration: duration,
+        allowMixing: allowMixing,
+        resolveUri: resolver,
+        loudnessLufs: loudnessLufs,
+        album: album,
+        genre: genre,
+        countsAsListening: countsAsListening,
+      );
+
   /// SRC-06 / MIX-08: YouTube items and license-restricted tracks never enter
   /// the mix engine. Any change involving them is a clean cut.
   bool get mixable => allowMixing && source != TrackSource.youtube;

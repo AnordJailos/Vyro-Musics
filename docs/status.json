@@ -3,9 +3,10 @@
     "updated": "12 October 2026",
     "next": [
       "Run ./setup.sh on your machine and report what flutter analyze and flutter test say. Until then, every Built item is unconfirmed (there is a lot of it now).",
+      "Try the player on a real phone: audio focus for calls (PLY-05) and the lock-screen controls can only be confirmed there.",
       "Before opening to the public: connect an email and SMS provider, set ADMIN_EMAILS, choose a copyright lookup service you may use commercially, have a lawyer review the notice process, and decide how lyrics will be reviewed.",
-      "Offline downloads, with encrypted storage and a download queue.",
-      "Recommendations (\"made for you\"), now that plays are recorded."
+      "Next module: Playlists (PLS), which builds on the new queue.",
+      "Offline downloads, with encrypted storage and a download queue."
     ]
   },
   "items": {
@@ -106,20 +107,20 @@
       "note": "The mix engine never blends YouTube or license-restricted tracks (tests written). YouTube playback itself is not built."
     },
     "PLY-01": {
-      "status": "partial",
-      "note": "Play, pause, seek, next, previous and repeat. Shuffle is missing."
+      "status": "built",
+      "note": "Play, pause, seek, next, previous, repeat (off, one, all) and shuffle. Shuffle plays the current song first, and the original order comes back when it is switched off."
     },
     "PLY-02": {
       "status": "built",
-      "note": "Notification, lock screen and headset buttons on Android, iOS and macOS."
+      "note": "Notification, lock screen and headset buttons on Android, iOS and macOS, including shuffle and repeat."
     },
     "PLY-03": {
-      "status": "partial",
-      "note": "The queue works inside the player. There is no queue screen (reorder, remove, history)."
+      "status": "built",
+      "note": "A queue screen with play next, add, reorder, remove, clear and a history list. Song rows have a menu for Play next and Add to queue."
     },
     "PLY-04": {
-      "status": "partial",
-      "note": "Mini player and full Now Playing screen. Swipe gestures are missing."
+      "status": "built",
+      "note": "Mini player and full Now Playing screen. Swipe sideways on the mini player or the artwork to skip, and swipe up on the mini player to open Now Playing. Swipe down to close is not built."
     },
     "PLY-05": {
       "status": "partial",
@@ -560,6 +561,14 @@
     "STU-10": {
       "status": "partial",
       "note": "Artists can write, paste or import .lrc lyrics. There is no tap-to-time editor yet."
+    },
+    "PLY-07": {
+      "status": "built",
+      "note": "The queue, shuffle and repeat settings, and the exact place in the song are saved and brought back when the app starts, paused and ready. Nothing loads until play is pressed, so starting needs no connection."
+    },
+    "PLY-08": {
+      "status": "partial",
+      "note": "A buffering spinner and automatic retries (after 1, 2 and 4 seconds, from where the song stopped) are built. Dropping to a lower quality needs several versions of each song, which do not exist yet."
     }
   }
 }

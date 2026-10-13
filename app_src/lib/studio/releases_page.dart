@@ -22,7 +22,7 @@ class _ReleasesPageState extends State<ReleasesPage> {
   late Future<List<StudioTrack>> _future = widget.studio.myTracks();
 
   Future<void> _reload() async {
-    setState(() => _future = widget.studio.myTracks());
+    setState(() { _future = widget.studio.myTracks(); });
     await _future.catchError((_) => <StudioTrack>[]);
   }
 

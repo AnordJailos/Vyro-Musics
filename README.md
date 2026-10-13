@@ -138,6 +138,22 @@ Nothing goes live unchecked. When an artist submits a song ("Submit for release"
   ACRCloud or Audible Magic behind the same interface); and anyone can send a notice, so decide how rights holders are
   verified before you rely on it.
 
+## Playing music
+
+- **Shuffle** plays the queue in a random order, starting with the song that is playing; switching it off puts the original
+  order back, including songs added in the meantime.
+- **The queue**: the queue button on the Now Playing screen shows what is playing, what is next (drag to reorder, remove, or
+  clear) and what was played before (tap to play again). Song rows in Home, Search and the Library have a menu with
+  **Play next** and **Add to queue**.
+- **Swipes**: flick the mini player or the artwork sideways to skip, and flick the mini player up to open Now Playing.
+- **Picking up where you left off**: the queue, the settings and the place in the song are saved on the device (every few
+  seconds while playing, and when the app goes to the background). The next start shows them paused and ready.
+  Nothing loads until play is pressed.
+- **Connection trouble**: a spinner shows while a song buffers. If the connection drops mid-song, the player waits and tries
+  again after 1, 2 and 4 seconds, from where it stopped (asking for a fresh address each time); then it stops and says so,
+  and pressing play continues from the same spot. Songs on the device are not retried. Lowering the quality instead of
+  stalling needs several versions of each song and is not built yet.
+
 ## Lyrics
 
 - **Artists** add lyrics in the Studio (Releases, then the song's menu, then **Add lyrics**): type or paste them, or import

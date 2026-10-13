@@ -86,7 +86,7 @@ class _SearchPageState extends State<SearchPage> {
                         if (snap.hasError) return Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text('Could not search Vyro right now.', style: text.bodySmall));
                         final list = snap.data ?? const <CatalogTrack>[];
                         if (list.isEmpty) return Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text('Nothing on Vyro matches.', style: text.bodySmall));
-                        return Column(children: [for (var i = 0; i < list.length; i++) CatalogTrackTile(track: list[i], catalog: widget.catalog, onTap: () => _playVyro(list, i))]);
+                        return Column(children: [for (var i = 0; i < list.length; i++) CatalogTrackTile(track: list[i], catalog: widget.catalog, playback: widget.playback, onTap: () => _playVyro(list, i))]);
                       },
                     ),
                     const SizedBox(height: 16),

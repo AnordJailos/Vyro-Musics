@@ -13,7 +13,6 @@ import 'package:vyro_music/auth/screens/welcome_page.dart';
 import 'package:vyro_music/auth/social_sign_in.dart';
 import 'package:vyro_music/auth/token_store.dart';
 import 'package:vyro_music/auth/validators.dart';
-import 'package:vyro_music/auth/screens/auth_widgets.dart';
 
 import 'auth_fakes.dart';
 

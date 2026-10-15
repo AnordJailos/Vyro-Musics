@@ -1,6 +1,8 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import { LIVE } from './catalog_routes.js';
 import type { Db } from './db.js';
+import { PUBLIC_COLUMNS, publicView } from './track_views.js';
 import { ARTIST_RANGES, LISTENER_RANGES, artistStats, listenerStats, publicArtist, trackRetention } from './stats.js';
 
 type Guard = (req: FastifyRequest, reply: FastifyReply) => Promise<unknown>;
@@ -134,6 +136,21 @@ export function registerStatsRoutes({ app, db, requireUser, now, minCohort }: De
     if (!p.success) return invalid(reply, p.error);
     await db.query('delete from saves where user_id = $1 and track_id = $2', [req.userId, p.data.id]);
     return reply.code(204).send();
+  });
+
+  // The songs the person has liked, newest first, so likes follow them to another device.
+  app.get('/v1/me/saves', userOnly, async (req) => {
+    const allowed = (await db.query<{ explicit_allowed: boolean }>('select explicit_allowed from users where id = $1', [req.userId])).rows[0]?.explicit_allowed ?? false;
+    const rows = (
+      await db.query<any>(
+        `select ${PUBLIC_COLUMNS}, s.created_at as saved_at
+         from saves s join tracks t on t.id = s.track_id join artist_profiles ap on ap.user_id = t.artist_id
+         where s.user_id = $1 and ${LIVE} and ($2::boolean or not t.explicit)
+         order by s.created_at desc limit 1000`,
+        [req.userId, allowed],
+      )
+    ).rows;
+    return { tracks: rows.map((r) => ({ ...publicView(r), savedAt: r.saved_at })) };
   });
 
   // ---- listener profile statistics ---------------------------------------

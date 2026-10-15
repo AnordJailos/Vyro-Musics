@@ -56,3 +56,57 @@ List<ArtistGroup> artistsOf(List<LibraryTrack> tracks) {
   result.sort((a, b) => _compare(a.name, b.name));
   return result;
 }
+
+class GenreGroup {
+  const GenreGroup(this.name, this.tracks);
+  final String name;
+  final List<LibraryTrack> tracks;
+}
+
+class FolderGroup {
+  const FolderGroup(this.path, this.name, this.tracks);
+
+  /// The full folder, and just its last part for showing in a list.
+  final String path;
+  final String name;
+  final List<LibraryTrack> tracks;
+}
+
+bool _unknown(String genre) => genre.toLowerCase().startsWith('unknown');
+
+List<GenreGroup> genresOf(List<LibraryTrack> tracks) {
+  final groups = <String, List<LibraryTrack>>{};
+  for (final t in tracks) {
+    groups.putIfAbsent(t.genre.toLowerCase(), () => []).add(t);
+  }
+  final result = [
+    for (final list in groups.values) GenreGroup(list.first.genre, [...list]..sort((a, b) => _compare(a.title, b.title))),
+  ];
+  // Songs with no genre go last.
+  result.sort((a, b) => _unknown(a.name) != _unknown(b.name) ? (_unknown(a.name) ? 1 : -1) : _compare(a.name, b.name));
+  return result;
+}
+
+/// The folder a file is in, whichever way the device writes paths.
+String folderOf(String path) {
+  final p = path.replaceAll('\\', '/');
+  final i = p.lastIndexOf('/');
+  return i <= 0 ? p : p.substring(0, i);
+}
+
+List<FolderGroup> foldersOf(List<LibraryTrack> tracks) {
+  final groups = <String, List<LibraryTrack>>{};
+  for (final t in tracks) {
+    groups.putIfAbsent(folderOf(t.path).toLowerCase(), () => []).add(t);
+  }
+  final result = [
+    for (final list in groups.values)
+      () {
+        final path = folderOf(list.first.path);
+        final name = path.split('/').lastWhere((x) => x.isNotEmpty, orElse: () => path);
+        return FolderGroup(path, name, [...list]..sort((a, b) => _compare(a.title, b.title)));
+      }(),
+  ];
+  result.sort((a, b) => _compare(a.name, b.name));
+  return result;
+}

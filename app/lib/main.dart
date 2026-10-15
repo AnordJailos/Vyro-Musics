@@ -18,6 +18,11 @@ import 'auth/auth_controller.dart';
 import 'auth/screens/auth_gate.dart';
 import 'auth/social_sign_in.dart';
 import 'auth/token_store.dart';
+import 'audio/playback_store.dart';
+import 'playlists/playlist_store.dart';
+import 'playlists/playlists_controller.dart';
+import 'playlists/playlists_scope.dart';
+import 'audio/track.dart' show Track, TrackSource;
 import 'catalog/catalog_api.dart';
 import 'history/history_store.dart';
 import 'history/history_sync.dart';
@@ -52,6 +57,8 @@ Future<void> main() async {
     deckA: JustAudioDeck(),
     deckB: JustAudioDeck(),
     describeError: (e) => e is ApiException ? e.message : 'Could not play that song.',
+    // A lost connection or a busy server is worth trying again; "not allowed" or "not found" is not.
+    isRetryable: (e) => e is! ApiException || e.status == 0 || e.status == 408 || e.status == 429 || e.status >= 500,
     onPlayEnded: (play) => unawaited(recorder.record(play)),
   );
 
@@ -101,18 +108,31 @@ Future<void> main() async {
   });
   unawaited(auth.restore());
 
+  // Bring back the queue and the place in the song from last time, paused and ready. Nothing is loaded until
+  // play is pressed, so starting the app does not need the network.
+  final catalog = HttpCatalogApi(client);
+  // Songs read back from a save need a way to ask for a fresh stream address.
+  Track attach(Track t) => t.source == TrackSource.vyro && t.id.startsWith('vyro:') ? t.withResolveUri(() => catalog.streamUri(t.id.substring(5))) : t;
+  final playbackStore = FilePlaybackStore(attach: attach);
+  final playlists = PlaylistsController(store: FilePlaylistStore(), attach: attach);
+  await playlists.load();
+  final saved = await playbackStore.load();
+  if (saved != null) await playback.restore(saved);
+  PlaybackPersistor(controller: playback, store: playbackStore).start();
+
   runApp(VyroApp(
     playback: playback,
     library: library,
     auth: auth,
     stats: MergedStatsRepository(server: ApiStatsRepository(client), store: history),
     social: const UnconfiguredSocialSignIn(),
-    catalog: HttpCatalogApi(client),
+    catalog: catalog,
     studio: HttpStudioApi(client),
     picker: const DeviceFilePickerService(),
     admin: HttpAdminApi(client),
     history: history,
     embeddedLyrics: readEmbeddedLyrics,
+    playlists: playlists,
   ));
 }
 
@@ -130,9 +150,11 @@ class VyroApp extends StatefulWidget {
     this.admin = const OfflineAdminApi(),
     HistoryStore? history,
     this.embeddedLyrics,
+    PlaylistsController? playlists,
   })  : stats = stats ?? DemoStatsRepository(),
         library = library ?? LibraryController(store: MemoryLibraryStore(), scanner: LibraryScanner(readTags: _noTags)),
         history = history ?? MemoryHistoryStore(),
+        playlists = playlists ?? PlaylistsController(store: MemoryPlaylistStore()),
         auth = auth ?? (AuthController(api: const OfflineAuthApi(), store: MemoryTokenStore())..continueAsGuest());
 
   final PlaybackController playback;
@@ -148,6 +170,7 @@ class VyroApp extends StatefulWidget {
   final AdminApi admin;
   final HistoryStore history;
   final TextReader? embeddedLyrics;
+  final PlaylistsController playlists;
 
   @override
   State<VyroApp> createState() => _VyroAppState();
@@ -166,7 +189,10 @@ class _VyroAppState extends State<VyroApp> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
+    return PlaylistsScope(
+      controller: widget.playlists,
+      picker: widget.picker,
+      child: ListenableBuilder(
       listenable: _theme,
       builder: (context, _) => MaterialApp(
         title: 'Vyro Music',
@@ -192,6 +218,7 @@ class _VyroAppState extends State<VyroApp> {
           ),
         ),
       ),
+    ),
     );
   }
 }

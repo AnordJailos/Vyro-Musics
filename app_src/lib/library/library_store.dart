@@ -11,6 +11,7 @@ class LibrarySnapshot {
     this.roots = const [],
     this.excluded = const [],
     this.liked = const <String>{},
+    this.minSeconds = 30,
   });
 
   final List<LibraryTrack> tracks;
@@ -18,11 +19,15 @@ class LibrarySnapshot {
   final List<String> excluded;
   final Set<String> liked;
 
+  /// Songs shorter than this are left out when scanning (voice notes, ringtones). 0 keeps everything.
+  final int minSeconds;
+
   Map<String, Object?> toJson() => {
         'version': 1,
         'roots': roots,
         'excluded': excluded,
         'liked': liked.toList(),
+        'minSeconds': minSeconds,
         'tracks': [for (final t in tracks) t.toJson()],
       };
 
@@ -30,6 +35,7 @@ class LibrarySnapshot {
         roots: [for (final r in (json['roots'] as List? ?? const [])) r as String],
         excluded: [for (final r in (json['excluded'] as List? ?? const [])) r as String],
         liked: {for (final l in (json['liked'] as List? ?? const [])) l as String},
+        minSeconds: (json['minSeconds'] as num?)?.toInt() ?? 30,
         tracks: [
           for (final t in (json['tracks'] as List? ?? const [])) LibraryTrack.fromJson((t as Map).cast<String, Object?>()),
         ],

@@ -16,7 +16,7 @@ const chartQuery = z.object({
 const STREAM_MINUTES = 60;
 
 /** A song is visible to the public when it is published and its artist is not suspended. */
-const LIVE = "t.status = 'published' and not exists (select 1 from users su where su.id = t.artist_id and su.suspended_at is not null)";
+export const LIVE = "t.status = 'published' and not exists (select 1 from users su where su.id = t.artist_id and su.suspended_at is not null)";
 
 /** Reads "bytes=a-b", "bytes=a-" or "bytes=-n". */
 export function parseRange(header: string | undefined, size: number): { start: number; end: number } | 'invalid' | null {

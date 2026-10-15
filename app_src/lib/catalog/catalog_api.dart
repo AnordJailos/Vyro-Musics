@@ -20,6 +20,20 @@ abstract class CatalogApi {
 
   /// Tells the artist that something is wrong with the lyrics.
   Future<void> reportLyrics(String trackId, {String reason = 'other'});
+
+  /// Suggestions for the Home screen.
+  Future<List<RecSection>> recommendations();
+
+  /// "Not interested": [kind] is track or artist.
+  Future<void> notInterested({required String kind, required String id});
+
+  /// Forgets the "not interested" choices and the taste picks.
+  Future<void> resetRecommendations();
+
+  /// The songs the signed-in person liked, newest first.
+  Future<List<CatalogTrack>> savedTracks();
+  Future<void> saveTrack(String trackId);
+  Future<void> unsaveTrack(String trackId);
 }
 
 Map<String, Object?> _map(Object? v) => (v as Map).cast<String, Object?>();
@@ -71,6 +85,38 @@ class HttpCatalogApi implements CatalogApi {
   Future<void> reportLyrics(String trackId, {String reason = 'other'}) async {
     await _client.send('POST', '/v1/tracks/$trackId/lyrics/report', body: {'reason': reason});
   }
+
+  @override
+  Future<List<RecSection>> recommendations() async {
+    final m = _map(await _client.send('GET', '/v1/recommendations/home'));
+    return [for (final s in (m['sections'] as List)) RecSection.fromJson(_map(s))];
+  }
+
+  @override
+  Future<void> notInterested({required String kind, required String id}) async {
+    await _client.send('POST', '/v1/recommendations/not-interested', body: {'kind': kind, 'id': id});
+  }
+
+  @override
+  Future<void> resetRecommendations() async {
+    await _client.send('DELETE', '/v1/recommendations');
+  }
+
+  @override
+  Future<List<CatalogTrack>> savedTracks() async {
+    final m = _map(await _client.send('GET', '/v1/me/saves'));
+    return [for (final t in (m['tracks'] as List)) CatalogTrack.fromJson(_map(t))];
+  }
+
+  @override
+  Future<void> saveTrack(String trackId) async {
+    await _client.send('POST', '/v1/tracks/$trackId/save');
+  }
+
+  @override
+  Future<void> unsaveTrack(String trackId) async {
+    await _client.send('DELETE', '/v1/tracks/$trackId/save');
+  }
 }
 
 /// Used where there is no server (tests, previews): the catalog is simply empty.
@@ -97,4 +143,22 @@ class EmptyCatalogApi implements CatalogApi {
 
   @override
   Future<void> reportLyrics(String trackId, {String reason = 'other'}) async {}
+
+  @override
+  Future<List<RecSection>> recommendations() async => const [];
+
+  @override
+  Future<void> notInterested({required String kind, required String id}) async {}
+
+  @override
+  Future<void> resetRecommendations() async {}
+
+  @override
+  Future<List<CatalogTrack>> savedTracks() async => const [];
+
+  @override
+  Future<void> saveTrack(String trackId) async {}
+
+  @override
+  Future<void> unsaveTrack(String trackId) async {}
 }

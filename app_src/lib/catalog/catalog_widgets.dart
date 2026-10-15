@@ -1,3 +1,4 @@
+import '../library/likes_scope.dart';
 import '../audio/playback_controller.dart';
 import '../shell/queue_menu.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +30,7 @@ String mmss(int ms) {
 }
 
 class CatalogTrackTile extends StatelessWidget {
-  const CatalogTrackTile({super.key, required this.track, required this.catalog, required this.onTap, this.playback});
+  const CatalogTrackTile({super.key, required this.track, required this.catalog, required this.onTap, this.playback, this.onNotInterested, this.onHideArtist});
 
   final CatalogTrack track;
   final CatalogApi catalog;
@@ -37,6 +38,10 @@ class CatalogTrackTile extends StatelessWidget {
 
   /// When given, the row has a menu to play the song next or add it to the queue.
   final PlaybackController? playback;
+
+  /// Only on suggestions: "Not interested" in this song, or in this artist.
+  final VoidCallback? onNotInterested;
+  final VoidCallback? onHideArtist;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +69,8 @@ class CatalogTrackTile extends StatelessWidget {
           const SourceBadge('Vyro'),
           const SizedBox(width: 8),
           Text(mmss(track.durationMs), style: Theme.of(context).textTheme.bodySmall),
-          if (playback != null) QueueMenuButton(playback: playback!, label: track.title, track: () => track.toPlayable(catalog.streamUri)),
+          LikeButton(track: track.toPlayable(catalog.streamUri), label: track.title),
+          if (playback != null) QueueMenuButton(playback: playback!, label: track.title, track: () => track.toPlayable(catalog.streamUri), onNotInterested: onNotInterested, onHideArtist: onHideArtist),
         ],
       ),
       onTap: onTap,

@@ -3,10 +3,14 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../audio/playback_controller.dart';
+import '../audio/track.dart';
 import '../brand/vyro_mark.dart';
 import '../lyrics/lyrics_provider.dart';
 import '../lyrics/lyrics_view.dart';
 import '../theme/vyro_theme.dart';
+import '../library/likes_scope.dart';
+import '../playlists/add_to_playlist.dart';
+import '../playlists/playlists_scope.dart';
 import 'queue_page.dart';
 
 /// A quick flick sideways skips: left for the next song, right for the previous one.
@@ -124,6 +128,23 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
       appBar: AppBar(
         title: const Text('Now playing'),
         actions: [
+          ListenableBuilder(
+            listenable: controller,
+            builder: (context, _) {
+              final song = controller.current;
+              if (song == null || (song.source != TrackSource.local && song.source != TrackSource.vyro)) return const SizedBox.shrink();
+              return LikeButton(track: song);
+            },
+          ),
+          if (PlaylistsScope.maybeOf(context) != null)
+            IconButton(
+              tooltip: 'Add to playlist',
+              icon: const Icon(Icons.playlist_add_rounded),
+              onPressed: () {
+                final song = controller.current;
+                if (song != null) showAddToPlaylist(context, [song]);
+              },
+            ),
           IconButton(
             tooltip: 'Queue',
             icon: const Icon(Icons.queue_music_rounded),

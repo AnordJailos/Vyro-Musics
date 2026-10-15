@@ -72,7 +72,7 @@ Future<void> showParentCodeDialog(BuildContext context, AuthController auth) {
 
 /// Profile, privacy, parent permission, artist upgrade, sign out and account deletion.
 class AccountPage extends StatelessWidget {
-  const AccountPage({super.key, required this.auth, this.admin, this.playback, this.onClearHistory});
+  const AccountPage({super.key, required this.auth, this.admin, this.playback, this.onClearHistory, this.onResetRecommendations});
 
   final AuthController auth;
 
@@ -82,6 +82,28 @@ class AccountPage extends StatelessWidget {
 
   /// Forgets the listening history kept on this device.
   final Future<void> Function()? onClearHistory;
+
+  /// Forgets the "not interested" choices and the taste picks.
+  final Future<void> Function()? onResetRecommendations;
+
+  Future<void> _resetRecommendations(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: const Text('Reset recommendations?'),
+        content: const Text('Vyro will forget the genres and artists you picked, and the songs and artists you said you are not interested in. Suggestions start again from what is popular.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(d).pop(false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.of(d).pop(true), child: const Text('Reset')),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    await _change(context, () async {
+      await onResetRecommendations!();
+      if (context.mounted) showNotice(context, 'Recommendations reset.');
+    });
+  }
 
   Future<void> _clearHistory(BuildContext context) async {
     final ok = await showDialog<bool>(
@@ -269,6 +291,13 @@ class AccountPage extends StatelessWidget {
                 value: s.explicitAllowed,
                 onChanged: user.isMinor ? null : (v) => _change(context, () => auth.updateSettings(explicitAllowed: v)),
               ),
+              if (onResetRecommendations != null)
+                ListTile(
+                  leading: const Icon(Icons.restart_alt_rounded),
+                  title: const Text('Reset recommendations'),
+                  subtitle: const Text('Forgets your picks and "not interested" choices.'),
+                  onTap: () => _resetRecommendations(context),
+                ),
               if (onClearHistory != null)
                 ListTile(
                   leading: const Icon(Icons.history_toggle_off_rounded),

@@ -22,17 +22,69 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late Future<List<CatalogTrack>> _fresh = widget.catalog.newReleases();
   late Future<List<CatalogTrack>> _top = widget.catalog.charts();
+  late Future<List<RecSection>> _recs = _loadRecs();
+  final Set<String> _hiddenTracks = {};
+  final Set<String> _hiddenArtists = {};
+
+  // Suggestions are a bonus: if they cannot be loaded, the rest of Home still works.
+  Future<List<RecSection>> _loadRecs() => widget.catalog.recommendations().catchError((_) => <RecSection>[]);
 
   Future<void> _refresh() async {
     setState(() {
       _fresh = widget.catalog.newReleases();
       _top = widget.catalog.charts();
+      _recs = _loadRecs();
+      _hiddenTracks.clear();
+      _hiddenArtists.clear();
     });
-    await Future.wait([_fresh.catchError((_) => <CatalogTrack>[]), _top.catchError((_) => <CatalogTrack>[])]);
+    await Future.wait([_fresh.catchError((_) => <CatalogTrack>[]), _top.catchError((_) => <CatalogTrack>[]), _recs]);
   }
 
   void _play(List<CatalogTrack> list, int index, String origin) {
     widget.controller.setQueue([for (final t in list) t.toPlayable(widget.catalog.streamUri)], startIndex: index, origin: origin);
+  }
+
+  Future<void> _dismiss(CatalogTrack track, {required bool artist}) async {
+    setState(() => artist ? _hiddenArtists.add(track.artistId) : _hiddenTracks.add(track.id));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(duration: const Duration(seconds: 3), content: Text(artist ? "OK, we won't suggest ${track.artistName}." : 'OK, we will suggest fewer songs like this.')));
+    try {
+      await widget.catalog.notInterested(kind: artist ? 'artist' : 'track', id: artist ? track.artistId : track.id);
+    } catch (_) {
+      // The song is hidden for now either way; it will come back on refresh if the choice could not be saved.
+    }
+  }
+
+  Widget _recommendations() {
+    final text = Theme.of(context).textTheme;
+    return FutureBuilder<List<RecSection>>(
+      future: _recs,
+      builder: (context, snap) {
+        final blocks = <Widget>[];
+        for (final s in snap.data ?? const <RecSection>[]) {
+          final shown = [for (final t in s.tracks) if (!_hiddenTracks.contains(t.id) && !_hiddenArtists.contains(t.artistId)) t].take(10).toList();
+          if (shown.isEmpty) continue;
+          final origin = s.kind == 'popular' ? 'chart' : 'recommendation';
+          blocks.add(Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+              Text(s.title, style: text.titleMedium),
+              if (s.reason.isNotEmpty) Text(s.reason, style: text.bodySmall),
+              for (var i = 0; i < shown.length; i++)
+                CatalogTrackTile(
+                  track: shown[i],
+                  catalog: widget.catalog,
+                  playback: widget.controller,
+                  onTap: () => _play(shown, i, origin),
+                  onNotInterested: () => _dismiss(shown[i], artist: false),
+                  onHideArtist: () => _dismiss(shown[i], artist: true),
+                ),
+            ],
+          ));
+        }
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: blocks);
+      },
+    );
   }
 
   Widget _section(String title, Future<List<CatalogTrack>> future, String emptyText, String origin) {
@@ -83,6 +135,7 @@ class _HomePageState extends State<HomePage> {
           Center(
             child: Text('PRESS PLAY. KEEP THE FLOW.', style: text.labelMedium?.copyWith(letterSpacing: 3, color: VyroColors.mist)),
           ),
+          _recommendations(),
           _section('New on Vyro', _fresh, 'Songs from artists will appear here as they join Vyro.', 'direct'),
           _section('Top this week', _top, 'The most played songs will appear here.', 'chart'),
           const SizedBox(height: 20),

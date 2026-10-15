@@ -17,5 +17,11 @@ abstract class Deck {
   /// Fires once when the loaded track plays to its natural end.
   Stream<void> get completedStream;
 
+  /// True while the deck is loading or waiting for more data.
+  Stream<bool> get bufferingStream;
+
+  /// Playback errors, such as a lost connection in the middle of a song.
+  Stream<Object> get errorStream;
+
   Future<void> dispose();
 }

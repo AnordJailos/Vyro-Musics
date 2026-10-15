@@ -19,7 +19,13 @@ import 'auth/screens/auth_gate.dart';
 import 'auth/social_sign_in.dart';
 import 'auth/token_store.dart';
 import 'audio/playback_store.dart';
-import 'audio/track.dart' show TrackSource;
+import 'library/likes_controller.dart';
+import 'library/likes_scope.dart';
+import 'library/likes_store.dart';
+import 'playlists/playlist_store.dart';
+import 'playlists/playlists_controller.dart';
+import 'playlists/playlists_scope.dart';
+import 'audio/track.dart' show Track, TrackSource;
 import 'catalog/catalog_api.dart';
 import 'history/history_store.dart';
 import 'history/history_sync.dart';
@@ -108,9 +114,16 @@ Future<void> main() async {
   // Bring back the queue and the place in the song from last time, paused and ready. Nothing is loaded until
   // play is pressed, so starting the app does not need the network.
   final catalog = HttpCatalogApi(client);
-  final playbackStore = FilePlaybackStore(
-    attach: (t) => t.source == TrackSource.vyro && t.id.startsWith('vyro:') ? t.withResolveUri(() => catalog.streamUri(t.id.substring(5))) : t,
-  );
+  // Songs read back from a save need a way to ask for a fresh stream address.
+  Track attach(Track t) => t.source == TrackSource.vyro && t.id.startsWith('vyro:') ? t.withResolveUri(() => catalog.streamUri(t.id.substring(5))) : t;
+  final playbackStore = FilePlaybackStore(attach: attach);
+  final playlists = PlaylistsController(store: FilePlaylistStore(), attach: attach);
+  await playlists.load();
+  final likes = LikesController(library: library, store: FileLikesStore(), catalog: catalog, canSync: () => auth.isSignedIn && !auth.isOffline, attach: attach);
+  await likes.load();
+  auth.addListener(() {
+    if (auth.isSignedIn) unawaited(likes.sync()); // sends likes made before signing in, and fetches the ones made elsewhere
+  });
   final saved = await playbackStore.load();
   if (saved != null) await playback.restore(saved);
   PlaybackPersistor(controller: playback, store: playbackStore).start();
@@ -127,6 +140,8 @@ Future<void> main() async {
     admin: HttpAdminApi(client),
     history: history,
     embeddedLyrics: readEmbeddedLyrics,
+    playlists: playlists,
+    likes: likes,
   ));
 }
 
@@ -144,9 +159,12 @@ class VyroApp extends StatefulWidget {
     this.admin = const OfflineAdminApi(),
     HistoryStore? history,
     this.embeddedLyrics,
+    PlaylistsController? playlists,
+    this.likes,
   })  : stats = stats ?? DemoStatsRepository(),
         library = library ?? LibraryController(store: MemoryLibraryStore(), scanner: LibraryScanner(readTags: _noTags)),
         history = history ?? MemoryHistoryStore(),
+        playlists = playlists ?? PlaylistsController(store: MemoryPlaylistStore()),
         auth = auth ?? (AuthController(api: const OfflineAuthApi(), store: MemoryTokenStore())..continueAsGuest());
 
   final PlaybackController playback;
@@ -162,6 +180,10 @@ class VyroApp extends StatefulWidget {
   final AdminApi admin;
   final HistoryStore history;
   final TextReader? embeddedLyrics;
+  final PlaylistsController playlists;
+
+  /// Likes for songs on the device and on Vyro. Made from the library when not given.
+  final LikesController? likes;
 
   @override
   State<VyroApp> createState() => _VyroAppState();
@@ -171,16 +193,23 @@ Future<List<TagInfo?>> _noTags(List<String> paths) async => const [];
 
 class _VyroAppState extends State<VyroApp> {
   final _theme = ThemeController();
+  late final LikesController _likes = widget.likes ?? LikesController(library: widget.library, store: MemoryLikesStore(), catalog: widget.catalog);
 
   @override
   void dispose() {
+    if (widget.likes == null) _likes.dispose();
     _theme.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
+    return LikesScope(
+      controller: _likes,
+      child: PlaylistsScope(
+      controller: widget.playlists,
+      picker: widget.picker,
+      child: ListenableBuilder(
       listenable: _theme,
       builder: (context, _) => MaterialApp(
         title: 'Vyro Music',
@@ -206,6 +235,8 @@ class _VyroAppState extends State<VyroApp> {
           ),
         ),
       ),
+    ),
+    ),
     );
   }
 }

@@ -7,10 +7,10 @@ import 'package:vyro_music/studio/file_picker_service.dart';
 import 'package:vyro_music/studio/studio_api.dart';
 import 'package:vyro_music/studio/studio_models.dart';
 
-CatalogTrack catalogTrack(String id, String title, {String artist = 'Nova Wave', bool explicit = false, bool allowMixing = true, int? rank}) => CatalogTrack(
+CatalogTrack catalogTrack(String id, String title, {String artist = 'Nova Wave', String? artistId, bool explicit = false, bool allowMixing = true, int? rank}) => CatalogTrack(
       id: id,
       title: title,
-      artistId: 'artist-$id',
+      artistId: artistId ?? 'artist-$id',
       artistName: artist,
       durationMs: 200000,
       explicit: explicit,
@@ -29,6 +29,13 @@ class FakeCatalogApi implements CatalogApi {
   final lyricsByTrack = <String, Lyrics?>{};
   final lyricsLookups = <String>[];
   final reports = <String>[];
+  List<RecSection> recs = [];
+  Object? recsFailure;
+  final dismissed = <String>[];
+  int resets = 0;
+  List<CatalogTrack> saved = [];
+  final saveCalls = <String>[];
+  Object? saveFailure;
   Object? lyricsFailure;
 
   T _go<T>(T v) {
@@ -62,6 +69,42 @@ class FakeCatalogApi implements CatalogApi {
 
   @override
   Future<void> reportLyrics(String trackId, {String reason = 'other'}) async => reports.add('$trackId:$reason');
+
+  @override
+  Future<List<RecSection>> recommendations() async {
+    final e = recsFailure;
+    if (e != null) throw e;
+    return recs;
+  }
+
+  @override
+  Future<void> notInterested({required String kind, required String id}) async => dismissed.add('$kind:$id');
+
+  @override
+  Future<void> resetRecommendations() async => resets++;
+
+  @override
+  Future<List<CatalogTrack>> savedTracks() async {
+    final e = saveFailure;
+    if (e != null) throw e;
+    return List.of(saved);
+  }
+
+  @override
+  Future<void> saveTrack(String trackId) async {
+    final e = saveFailure;
+    if (e != null) throw e;
+    saveCalls.add('save:$trackId');
+    if (!saved.any((t) => t.id == trackId)) saved.insert(0, catalogTrack(trackId, 'Song $trackId'));
+  }
+
+  @override
+  Future<void> unsaveTrack(String trackId) async {
+    final e = saveFailure;
+    if (e != null) throw e;
+    saveCalls.add('unsave:$trackId');
+    saved.removeWhere((t) => t.id == trackId);
+  }
 
   @override
   Uri coverUri(String coverPath) => Uri.parse('http://localhost:3000$coverPath');

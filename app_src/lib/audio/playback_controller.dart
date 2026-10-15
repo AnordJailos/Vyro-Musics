@@ -382,11 +382,42 @@ class PlaybackController extends ChangeNotifier {
   Future<void> removeFromQueue(int index) => _enqueue(() async {
         _commitFade();
         if (index < 0 || index >= _queue.length || index == _index) return;
-        final uid = _ids[index];
-        _queue = List<Track>.unmodifiable([..._queue.sublist(0, index), ..._queue.sublist(index + 1)]);
-        _ids = [..._ids.sublist(0, index), ..._ids.sublist(index + 1)];
-        if (index < _index) _index--;
-        if (_shuffle) _originalIds = [for (final u in _originalIds) if (u != uid) u];
+        _removeEntry(index);
+        _autoMixScheduled = false;
+        notifyListeners();
+      });
+
+  void _removeEntry(int index) {
+    final uid = _ids[index];
+    _queue = List<Track>.unmodifiable([..._queue.sublist(0, index), ..._queue.sublist(index + 1)]);
+    _ids = [..._ids.sublist(0, index), ..._ids.sublist(index + 1)];
+    if (index < _index) _index--;
+    if (_shuffle) _originalIds = [for (final u in _originalIds) if (u != uid) u];
+  }
+
+  /// Takes a song out of the queue and the history everywhere, for when it no longer exists (a deleted file). If it
+  /// is playing, playback moves on to another song first, so nothing keeps the file open.
+  Future<void> dropTrack(String trackId) => _enqueue(() async {
+        _commitFade();
+        _history.removeWhere((t) => t.id == trackId);
+        if (!_queue.any((t) => t.id == trackId)) return;
+        if (current?.id == trackId) {
+          int? move;
+          for (var i = _index + 1; i < _queue.length && move == null; i++) {
+            if (_queue[i].id != trackId) move = i;
+          }
+          for (var i = 0; i < _index && move == null; i++) {
+            if (_queue[i].id != trackId) move = i;
+          }
+          if (move == null) {
+            await _setQueueNow(const [], 0, false, _origin); // it was the only song
+            return;
+          }
+          await _cutTo(move);
+        }
+        for (var i = _queue.length - 1; i >= 0; i--) {
+          if (_queue[i].id == trackId) _removeEntry(i);
+        }
         _autoMixScheduled = false;
         notifyListeners();
       });

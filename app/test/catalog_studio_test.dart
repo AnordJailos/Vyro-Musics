@@ -266,16 +266,7 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
       for (final status in ['in_review', 'held']) {
         final studio = FakeStudioApi()..publishStatus = status;
-        await tester.pumpWidget(
-          _host(
-            StudioPage(
-              key: ValueKey(status),
-              studio: studio,
-              picker: FakePicker(audio: pickedFile('song.mp3', 2048)),
-            ),
-          ),
-        );
-        // await tester.pumpWidget(_host(StudioPage(studio: studio, picker: FakePicker(audio: pickedFile('song.mp3', 2048)))));
+        await tester.pumpWidget(_host(StudioPage(studio: studio, picker: FakePicker(audio: pickedFile('song.mp3', 2048)))));
         await tester.tap(find.text('Choose audio file'));
         await tester.pumpAndSettle();
         await tester.tap(find.widgetWithText(FilledButton, 'Upload'));

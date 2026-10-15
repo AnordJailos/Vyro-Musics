@@ -404,11 +404,8 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    final field = find.widgetWithText(TextField, 'Lyrics');
-    final save = find.widgetWithText(FilledButton, 'Save lyrics');
-
-    // Finder get field => find.widgetWithText(TextField, 'Lyrics');
-    // Finder get save => find.widgetWithText(FilledButton, 'Save lyrics');
+    Finder get field => find.widgetWithText(TextField, 'Lyrics');
+    Finder get save => find.widgetWithText(FilledButton, 'Save lyrics');
 
     testWidgets('writes lyrics, sees what kind they are, and saves', (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 1800));

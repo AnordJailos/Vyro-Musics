@@ -67,3 +67,26 @@ class CatalogTrack {
         resolveUri: () => streamUri(id),
       );
 }
+
+/// A row of suggestions on the Home screen: picked for you, popular where you are, or a list chosen by Vyro's staff.
+class RecSection {
+  const RecSection({required this.id, required this.kind, required this.title, required this.reason, required this.tracks});
+
+  final String id;
+
+  /// for_you, popular or editorial.
+  final String kind;
+  final String title;
+
+  /// Why these songs are here, in plain words.
+  final String reason;
+  final List<CatalogTrack> tracks;
+
+  factory RecSection.fromJson(Map<String, Object?> j) => RecSection(
+        id: j['id'] as String,
+        kind: (j['kind'] as String?) ?? 'editorial',
+        title: j['title'] as String,
+        reason: (j['reason'] as String?) ?? '',
+        tracks: [for (final t in (j['tracks'] as List)) CatalogTrack.fromJson((t as Map).cast<String, Object?>())],
+      );
+}

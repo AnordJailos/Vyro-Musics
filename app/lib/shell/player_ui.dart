@@ -1,12 +1,28 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart' hide RepeatMode;
+import 'package:flutter/material.dart';
 
 import '../audio/playback_controller.dart';
 import '../brand/vyro_mark.dart';
 import '../lyrics/lyrics_provider.dart';
 import '../lyrics/lyrics_view.dart';
 import '../theme/vyro_theme.dart';
+import '../playlists/add_to_playlist.dart';
+import '../playlists/playlists_scope.dart';
+import 'queue_page.dart';
+
+/// A quick flick sideways skips: left for the next song, right for the previous one.
+void _swipeToSkip(PlaybackController controller, DragEndDetails details) {
+  final v = details.primaryVelocity ?? 0;
+  if (v < -300) {
+    controller.next();
+  } else if (v > 300) {
+    controller.previous();
+  }
+}
+
+Widget _busyOr(PlaybackController controller, Widget icon, {double size = 24}) =>
+    controller.isBuffering ? SizedBox(width: size, height: size, child: const CircularProgressIndicator(strokeWidth: 2.5)) : icon;
 
 String _fmt(Duration d) {
   final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
@@ -30,13 +46,14 @@ class MiniPlayer extends StatelessWidget {
         final text = Theme.of(context).textTheme;
         return Material(
           color: Theme.of(context).colorScheme.surfaceContainerHigh,
-          child: InkWell(
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                fullscreenDialog: true,
-                builder: (_) => NowPlayingPage(controller: controller, lyrics: lyrics),
-              ),
-            ),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onHorizontalDragEnd: (d) => _swipeToSkip(controller, d),
+            onVerticalDragEnd: (d) {
+              if ((d.primaryVelocity ?? 0) < -300) _open(context);
+            },
+            child: InkWell(
+            onTap: () => _open(context),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
               child: Row(
@@ -48,7 +65,7 @@ class MiniPlayer extends StatelessWidget {
                       children: [
                         Text(track.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: text.titleSmall),
                         Text(
-                          controller.isTransitioning ? 'Mixing…' : track.artist,
+                          controller.isRetrying ? 'Reconnecting…' : (controller.isTransitioning ? 'Mixing…' : track.artist),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: text.bodySmall,
@@ -59,7 +76,7 @@ class MiniPlayer extends StatelessWidget {
                   IconButton(
                     tooltip: controller.isPlaying ? 'Pause' : 'Play',
                     onPressed: controller.togglePlay,
-                    icon: Icon(controller.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                    icon: _busyOr(controller, Icon(controller.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded)),
                   ),
                   IconButton(
                     tooltip: 'Next',
@@ -70,10 +87,18 @@ class MiniPlayer extends StatelessWidget {
               ),
             ),
           ),
+          ),
         );
       },
     );
   }
+
+  void _open(BuildContext context) => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          fullscreenDialog: true,
+          builder: (_) => NowPlayingPage(controller: controller, lyrics: lyrics),
+        ),
+      );
 }
 
 class NowPlayingPage extends StatefulWidget {
@@ -101,6 +126,20 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
       appBar: AppBar(
         title: const Text('Now playing'),
         actions: [
+          if (PlaylistsScope.maybeOf(context) != null)
+            IconButton(
+              tooltip: 'Add to playlist',
+              icon: const Icon(Icons.playlist_add_rounded),
+              onPressed: () {
+                final song = controller.current;
+                if (song != null) showAddToPlaylist(context, [song]);
+              },
+            ),
+          IconButton(
+            tooltip: 'Queue',
+            icon: const Icon(Icons.queue_music_rounded),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => QueuePage(controller: controller))),
+          ),
           if (lyrics != null)
             IconButton(
               tooltip: _showLyrics ? 'Hide lyrics' : 'Show lyrics',
@@ -122,17 +161,21 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
               if (_showLyrics && lyrics != null)
                 SizedBox(height: 320, child: LyricsView(controller: controller, provider: lyrics))
               else
-                Center(
-                  child: Container(
-                    width: 240,
-                    height: 240,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: VyroColors.panel,
-                      borderRadius: BorderRadius.circular(32),
-                      border: Border.all(color: VyroColors.panelBorder),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onHorizontalDragEnd: (d) => _swipeToSkip(controller, d),
+                  child: Center(
+                    child: Container(
+                      width: 240,
+                      height: 240,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: VyroColors.panel,
+                        borderRadius: BorderRadius.circular(32),
+                        border: Border.all(color: VyroColors.panelBorder),
+                      ),
+                      child: const VyroMark(size: 150),
                     ),
-                    child: const VyroMark(size: 150),
                   ),
                 ),
               const SizedBox(height: 24),
@@ -143,7 +186,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
               SizedBox(
                 height: 20,
                 child: Text(
-                  controller.isTransitioning ? 'Mixing into ${controller.mixingInto?.title ?? ''}' : '',
+                  controller.isRetrying ? 'Reconnecting…' : (controller.isTransitioning ? 'Mixing into ${controller.mixingInto?.title ?? ''}' : ''),
                   style: text.labelMedium?.copyWith(color: Theme.of(context).colorScheme.primary),
                   textAlign: TextAlign.center,
                 ),
@@ -153,6 +196,19 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton(
+                    tooltip: 'Shuffle',
+                    onPressed: () => controller.setShuffle(!controller.shuffle),
+                    icon: Icon(Icons.shuffle_rounded, color: controller.shuffle ? Theme.of(context).colorScheme.primary : null),
+                  ),
+                  IconButton(iconSize: 36, tooltip: 'Previous', onPressed: controller.previous, icon: const Icon(Icons.skip_previous_rounded)),
+                  IconButton.filled(
+                    iconSize: 40,
+                    tooltip: controller.isPlaying ? 'Pause' : 'Play',
+                    onPressed: controller.togglePlay,
+                    icon: _busyOr(controller, Icon(controller.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded), size: 32),
+                  ),
+                  IconButton(iconSize: 36, tooltip: 'Next', onPressed: controller.next, icon: const Icon(Icons.skip_next_rounded)),
+                  IconButton(
                     tooltip: 'Repeat',
                     onPressed: () => controller.setRepeat(
                       RepeatMode.values[(controller.repeat.index + 1) % RepeatMode.values.length],
@@ -160,14 +216,6 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                     icon: Icon(controller.repeat == RepeatMode.one ? Icons.repeat_one_rounded : Icons.repeat_rounded,
                         color: controller.repeat == RepeatMode.off ? null : Theme.of(context).colorScheme.primary),
                   ),
-                  IconButton(iconSize: 36, tooltip: 'Previous', onPressed: controller.previous, icon: const Icon(Icons.skip_previous_rounded)),
-                  IconButton.filled(
-                    iconSize: 40,
-                    tooltip: controller.isPlaying ? 'Pause' : 'Play',
-                    onPressed: controller.togglePlay,
-                    icon: Icon(controller.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded),
-                  ),
-                  IconButton(iconSize: 36, tooltip: 'Next', onPressed: controller.next, icon: const Icon(Icons.skip_next_rounded)),
                 ],
               ),
               const SizedBox(height: 24),

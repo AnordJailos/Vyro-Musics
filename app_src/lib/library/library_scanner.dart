@@ -56,6 +56,7 @@ class LibraryScanner {
     List<String> excluded = const [],
     List<LibraryTrack> existing = const [],
     void Function(int found)? onProgress,
+    Duration? minDuration,
   }) async {
     final candidates = <_Candidate>[];
     for (final root in roots) {
@@ -79,7 +80,7 @@ class LibraryScanner {
       }
     }
     onProgress?.call(candidates.length);
-    return _build(candidates, existing, roots);
+    return _build(candidates, existing, roots, minDuration);
   }
 
   /// Adds individual files (for example songs the user picked).
@@ -94,7 +95,8 @@ class LibraryScanner {
     return _build(candidates, existing, const []);
   }
 
-  Future<ScanResult> _build(List<_Candidate> candidates, List<LibraryTrack> existing, List<String> roots) async {
+  Future<ScanResult> _build(List<_Candidate> candidates, List<LibraryTrack> existing, List<String> roots, [Duration? minOverride]) async {
+    final shortest = minOverride ?? minDuration;
     final byPath = {for (final t in existing) t.path: t};
     final unique = {for (final c in candidates) c.path: c}.values.toList();
 
@@ -124,7 +126,7 @@ class LibraryScanner {
         final c = chunk[j];
         final tag = j < tags.length ? tags[j] : null;
         final duration = tag?.duration;
-        if (duration != null && duration < minDuration) {
+        if (duration != null && duration < shortest) {
           skipped++;
           continue;
         }

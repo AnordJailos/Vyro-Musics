@@ -115,7 +115,7 @@ class _AppShellState extends State<AppShell> {
   StatsRepository get _stats => _auth.isSignedIn ? widget.stats : _demoStats;
 
   void _openAccount() {
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AccountPage(auth: _auth, admin: widget.admin, playback: widget.playback, onClearHistory: widget.history.clearHistory)));
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AccountPage(auth: _auth, admin: widget.admin, playback: widget.playback, onClearHistory: widget.history.clearHistory, onResetRecommendations: widget.catalog.resetRecommendations)));
   }
 
   Widget _page(_Tab tab) {

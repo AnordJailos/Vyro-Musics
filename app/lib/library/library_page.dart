@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../playlists/playlists_tab.dart';
+import '../shell/queue_menu.dart';
+
 import '../audio/playback_controller.dart';
 import 'library_controller.dart';
 import 'library_index.dart';
@@ -29,7 +32,7 @@ class LibraryPage extends StatelessWidget {
       builder: (context, _) {
         final text = Theme.of(context).textTheme;
         return DefaultTabController(
-          length: 4,
+          length: 5,
           child: Column(
             children: [
               Padding(
@@ -64,18 +67,19 @@ class LibraryPage extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: Align(alignment: Alignment.centerLeft, child: Text(library.message!, style: text.bodySmall)),
                 ),
-              const TabBar(tabs: [Tab(text: 'Songs'), Tab(text: 'Albums'), Tab(text: 'Artists'), Tab(text: 'Liked')]),
+              const TabBar(isScrollable: true, tabAlignment: TabAlignment.start, tabs: [Tab(text: 'Songs'), Tab(text: 'Albums'), Tab(text: 'Artists'), Tab(text: 'Liked'), Tab(text: 'Playlists')]),
               Expanded(
-                child: library.hasTracks
-                    ? TabBarView(
-                        children: [
-                          _SongList(library: library, songs: library.songs, onPlay: _play),
-                          _AlbumList(library: library, albums: library.albums, onPlay: _play),
-                          _ArtistList(library: library, artists: library.artists, onPlay: _play),
-                          _SongList(library: library, songs: library.likedSongs, onPlay: _play, emptyText: 'Tap the heart on a song to keep it here.'),
-                        ],
-                      )
-                    : _EmptyState(library: library),
+                child: TabBarView(
+                  children: [
+                    library.hasTracks ? _SongList(library: library, playback: playback, songs: library.songs, onPlay: _play) : _EmptyState(library: library),
+                    library.hasTracks ? _AlbumList(library: library, playback: playback, albums: library.albums, onPlay: _play) : _EmptyState(library: library),
+                    library.hasTracks ? _ArtistList(library: library, playback: playback, artists: library.artists, onPlay: _play) : _EmptyState(library: library),
+                    library.hasTracks
+                        ? _SongList(library: library, playback: playback, songs: library.likedSongs, onPlay: _play, emptyText: 'Tap the heart on a song to keep it here.')
+                        : _EmptyState(library: library),
+                    PlaylistsTab(playback: playback),
+                  ],
+                ),
               ),
             ],
           ),
@@ -116,9 +120,10 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _SongTile extends StatelessWidget {
-  const _SongTile({required this.library, required this.track, required this.onTap});
+  const _SongTile({required this.library, required this.playback, required this.track, required this.onTap});
 
   final LibraryController library;
+  final PlaybackController playback;
   final LibraryTrack track;
   final VoidCallback onTap;
 
@@ -139,6 +144,7 @@ class _SongTile extends StatelessWidget {
             onPressed: () => library.toggleLike(track.id),
             icon: Icon(liked ? Icons.favorite_rounded : Icons.favorite_border_rounded),
           ),
+          QueueMenuButton(playback: playback, label: track.title, track: track.toPlayable),
         ],
       ),
     );
@@ -148,9 +154,10 @@ class _SongTile extends StatelessWidget {
 typedef _PlayCallback = void Function(List<LibraryTrack> list, int index);
 
 class _SongList extends StatelessWidget {
-  const _SongList({required this.library, required this.songs, required this.onPlay, this.emptyText = 'Nothing matches your search.'});
+  const _SongList({required this.library, required this.playback, required this.songs, required this.onPlay, this.emptyText = 'Nothing matches your search.'});
 
   final LibraryController library;
+  final PlaybackController playback;
   final List<LibraryTrack> songs;
   final _PlayCallback onPlay;
   final String emptyText;
@@ -160,15 +167,16 @@ class _SongList extends StatelessWidget {
     if (songs.isEmpty) return Center(child: Text(emptyText));
     return ListView.builder(
       itemCount: songs.length,
-      itemBuilder: (context, i) => _SongTile(library: library, track: songs[i], onTap: () => onPlay(songs, i)),
+      itemBuilder: (context, i) => _SongTile(library: library, playback: playback, track: songs[i], onTap: () => onPlay(songs, i)),
     );
   }
 }
 
 class _AlbumList extends StatelessWidget {
-  const _AlbumList({required this.library, required this.albums, required this.onPlay});
+  const _AlbumList({required this.library, required this.playback, required this.albums, required this.onPlay});
 
   final LibraryController library;
+  final PlaybackController playback;
   final List<AlbumGroup> albums;
   final _PlayCallback onPlay;
 
@@ -183,7 +191,7 @@ class _AlbumList extends StatelessWidget {
             title: Text(a.name, maxLines: 1, overflow: TextOverflow.ellipsis),
             subtitle: Text('${a.artist} · ${a.tracks.length} songs'),
             children: [
-              for (var i = 0; i < a.tracks.length; i++) _SongTile(library: library, track: a.tracks[i], onTap: () => onPlay(a.tracks, i)),
+              for (var i = 0; i < a.tracks.length; i++) _SongTile(library: library, playback: playback, track: a.tracks[i], onTap: () => onPlay(a.tracks, i)),
             ],
           ),
       ],
@@ -192,9 +200,10 @@ class _AlbumList extends StatelessWidget {
 }
 
 class _ArtistList extends StatelessWidget {
-  const _ArtistList({required this.library, required this.artists, required this.onPlay});
+  const _ArtistList({required this.library, required this.playback, required this.artists, required this.onPlay});
 
   final LibraryController library;
+  final PlaybackController playback;
   final List<ArtistGroup> artists;
   final _PlayCallback onPlay;
 
@@ -209,7 +218,7 @@ class _ArtistList extends StatelessWidget {
             title: Text(a.name, maxLines: 1, overflow: TextOverflow.ellipsis),
             subtitle: Text('${a.tracks.length} songs'),
             children: [
-              for (var i = 0; i < a.tracks.length; i++) _SongTile(library: library, track: a.tracks[i], onTap: () => onPlay(a.tracks, i)),
+              for (var i = 0; i < a.tracks.length; i++) _SongTile(library: library, playback: playback, track: a.tracks[i], onTap: () => onPlay(a.tracks, i)),
             ],
           ),
       ],

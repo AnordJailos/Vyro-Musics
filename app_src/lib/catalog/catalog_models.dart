@@ -90,3 +90,128 @@ class RecSection {
         tracks: [for (final t in (j['tracks'] as List)) CatalogTrack.fromJson((t as Map).cast<String, Object?>())],
       );
 }
+
+class ArtistSummary {
+  const ArtistSummary({required this.id, required this.stageName, this.verified = false, this.followers = 0});
+
+  final String id;
+  final String stageName;
+  final bool verified;
+  final int followers;
+
+  factory ArtistSummary.fromJson(Map<String, Object?> j) => ArtistSummary(
+        id: j['id'] as String,
+        stageName: j['stageName'] as String,
+        verified: j['verified'] == true,
+        followers: (j['followers'] as num?)?.toInt() ?? 0,
+      );
+}
+
+class SearchResults {
+  const SearchResults({this.artists = const [], this.tracks = const []});
+
+  final List<ArtistSummary> artists;
+  final List<CatalogTrack> tracks;
+}
+
+/// Something to offer while the person is still typing.
+class Suggestion {
+  const Suggestion({required this.kind, required this.id, required this.text, this.subtitle = ''});
+
+  /// artist or song.
+  final String kind;
+  final String id;
+  final String text;
+  final String subtitle;
+
+  bool get isArtist => kind == 'artist';
+
+  factory Suggestion.fromJson(Map<String, Object?> j) => Suggestion(kind: j['kind'] as String, id: j['id'] as String, text: j['text'] as String, subtitle: (j['subtitle'] as String?) ?? '');
+}
+
+class GenreCount {
+  const GenreCount(this.genre, this.count);
+
+  final String genre;
+  final int count;
+}
+
+class ArtistLink {
+  const ArtistLink({required this.label, required this.url});
+
+  final String label;
+  final String url;
+}
+
+class ArtistPageData {
+  const ArtistPageData({
+    required this.artist,
+    this.bio = '',
+    this.genres = const [],
+    this.links = const [],
+    this.monthlyListeners = 0,
+    this.following = false,
+    this.topTracks = const [],
+    this.discography = const [],
+    this.similar = const [],
+  });
+
+  final ArtistSummary artist;
+  final String bio;
+  final List<String> genres;
+  final List<ArtistLink> links;
+  final int monthlyListeners;
+  final bool following;
+  final List<CatalogTrack> topTracks;
+  final List<CatalogTrack> discography;
+  final List<ArtistSummary> similar;
+
+  ArtistPageData withFollowing(bool value) => ArtistPageData(
+        artist: ArtistSummary(id: artist.id, stageName: artist.stageName, verified: artist.verified, followers: artist.followers + (value == following ? 0 : (value ? 1 : -1))),
+        bio: bio,
+        genres: genres,
+        links: links,
+        monthlyListeners: monthlyListeners,
+        following: value,
+        topTracks: topTracks,
+        discography: discography,
+        similar: similar,
+      );
+
+  factory ArtistPageData.fromJson(Map<String, Object?> j) {
+    Map<String, Object?> map(Object? o) => (o as Map).cast<String, Object?>();
+    final a = map(j['artist']);
+    return ArtistPageData(
+      artist: ArtistSummary.fromJson(a),
+      bio: (a['bio'] as String?) ?? '',
+      genres: [for (final g in (a['genres'] as List? ?? const [])) '$g'],
+      links: [
+        for (final l in (a['links'] as List? ?? const []))
+          if (l is Map) ArtistLink(label: '${l['label'] ?? l['name'] ?? l['type'] ?? ''}', url: '${l['url'] ?? ''}') else ArtistLink(label: '', url: '$l'),
+      ],
+      monthlyListeners: (a['monthlyListeners'] as num?)?.toInt() ?? 0,
+      following: j['following'] == true,
+      topTracks: [for (final t in (j['topTracks'] as List? ?? const [])) CatalogTrack.fromJson(map(t))],
+      discography: [for (final t in (j['discography'] as List? ?? const [])) CatalogTrack.fromJson(map(t))],
+      similar: [for (final x in (j['similar'] as List? ?? const [])) ArtistSummary.fromJson(map(x))],
+    );
+  }
+}
+
+class ArtistChartEntry {
+  const ArtistChartEntry({required this.rank, required this.artist, required this.plays, this.change});
+
+  final int rank;
+  final ArtistSummary artist;
+  final int plays;
+
+  /// For rising artists: how many more plays than the week before.
+  final int? change;
+
+  factory ArtistChartEntry.fromJson(Map<String, Object?> j) => ArtistChartEntry(
+        rank: (j['rank'] as num).toInt(),
+        artist: ArtistSummary.fromJson(j),
+        plays: (j['plays'] as num?)?.toInt() ?? 0,
+        change: (j['change'] as num?)?.toInt(),
+      );
+}

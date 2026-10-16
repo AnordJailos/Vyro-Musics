@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../../studio/file_picker_service.dart';
 
 import '../../admin/admin_api.dart';
 import '../../admin/admin_page.dart';
 import '../../audio/playback_controller.dart';
 import '../auth_controller.dart';
 import '../auth_models.dart';
+import '../countries.dart';
 import '../validators.dart';
 import 'artist_upgrade_page.dart';
 import 'auth_widgets.dart';
@@ -72,7 +76,7 @@ Future<void> showParentCodeDialog(BuildContext context, AuthController auth) {
 
 /// Profile, privacy, parent permission, artist upgrade, sign out and account deletion.
 class AccountPage extends StatelessWidget {
-  const AccountPage({super.key, required this.auth, this.admin, this.playback, this.onClearHistory, this.onResetRecommendations});
+  const AccountPage({super.key, required this.auth, this.admin, this.playback, this.onClearHistory, this.onResetRecommendations, this.picker = const NoFilePickerService()});
 
   final AuthController auth;
 
@@ -85,6 +89,29 @@ class AccountPage extends StatelessWidget {
 
   /// Forgets the "not interested" choices and the taste picks.
   final Future<void> Function()? onResetRecommendations;
+
+  /// Used to choose a profile photo.
+  final FilePickerService picker;
+
+  static const languages = {'en': 'English', 'sw': 'Kiswahili', 'fr': 'Français', 'ar': 'العربية', 'pt': 'Português', 'es': 'Español'};
+
+  Future<void> _choosePhoto(BuildContext context) async {
+    final file = await picker.pickImage();
+    if (file == null || !context.mounted) return;
+    if (file.length > 5 * 1024 * 1024) {
+      showNotice(context, 'That picture is too large. Choose one under 5 MB.');
+      return;
+    }
+    await _change(context, () => auth.uploadPhoto(file));
+  }
+
+  Future<void> _downloadData(BuildContext context) async {
+    await _change(context, () async {
+      final text = await auth.exportData();
+      await Clipboard.setData(ClipboardData(text: text));
+      if (context.mounted) showNotice(context, 'Your data was copied. Paste it into a file to keep it.');
+    });
+  }
 
   Future<void> _resetRecommendations(BuildContext context) async {
     final ok = await showDialog<bool>(
@@ -241,11 +268,49 @@ class AccountPage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 8),
             children: [
               ListTile(
-                leading: CircleAvatar(child: Text(user.displayName.isEmpty ? '?' : user.displayName[0].toUpperCase())),
+                leading: CircleAvatar(backgroundImage: auth.photoImage, child: auth.photoImage == null ? Text(user.displayName.isEmpty ? '?' : user.displayName[0].toUpperCase()) : null),
                 title: Text(user.displayName),
                 subtitle: Text('@${user.username}${user.email != null ? '\n${user.email}' : ''}${user.phone != null ? '\n${user.phone}' : ''}'),
                 isThreeLine: user.email != null || user.phone != null,
                 trailing: IconButton(tooltip: 'Edit profile', icon: const Icon(Icons.edit_outlined), onPressed: () => _editProfile(context, user)),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: Text(user.photoUrl == null ? 'Add a profile photo' : 'Change profile photo'),
+                onTap: () => _choosePhoto(context),
+              ),
+              if (user.photoUrl != null)
+                ListTile(
+                  leading: const Icon(Icons.no_photography_outlined),
+                  title: const Text('Remove profile photo'),
+                  onTap: () => _change(context, auth.removePhoto),
+                ),
+              ListTile(
+                leading: const Icon(Icons.language_rounded),
+                title: const Text('Language'),
+                subtitle: const Text('Vyro is not translated yet. Your choice is saved for when it is.'),
+                trailing: DropdownButton<String>(
+                  key: const ValueKey('language'),
+                  value: user.language,
+                  items: [for (final e in {...languages, user.language: languages[user.language] ?? user.language}.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
+                  onChanged: (v) {
+                    if (v != null && v != user.language) _change(context, () => auth.updateProfile(language: v));
+                  },
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.public_rounded),
+                title: const Text('Country'),
+                subtitle: const Text('Used for the charts, and to show artists where their listeners are.'),
+                trailing: DropdownButton<String>(
+                  key: const ValueKey('country'),
+                  value: countryNames.containsKey(user.country) ? user.country : null,
+                  hint: const Text('Choose'),
+                  items: [for (final e in countryNames.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
+                  onChanged: (v) {
+                    if (v != null && v != user.country) _change(context, () => auth.updateProfile(country: v));
+                  },
+                ),
               ),
               if (user.needsEmailCheck)
                 ListTile(
@@ -276,12 +341,20 @@ class AccountPage extends StatelessWidget {
                 onChanged: (v) => _change(context, () => auth.updateSettings(personalization: v)),
               ),
               SwitchListTile(
+                title: const Text('Share my country with artists'),
+                subtitle: const Text('Artists see where their listeners are, never who they are. Turn off and your plays count without a country.'),
+                value: s.shareCountry,
+                onChanged: (v) => _change(context, () => auth.updateSettings(shareCountry: v)),
+              ),
+              SwitchListTile(
                 title: const Text('Show my listening on my profile'),
+                subtitle: const Text('Nothing is shown to other people yet; this applies once profiles can be seen.'),
                 value: s.shareListening,
                 onChanged: (v) => _change(context, () => auth.updateSettings(shareListening: v)),
               ),
               SwitchListTile(
                 title: const Text('Hide my activity from friends'),
+                subtitle: const Text('Applies once friends and sharing arrive.'),
                 value: s.hideActivity,
                 onChanged: (v) => _change(context, () => auth.updateSettings(hideActivity: v)),
               ),
@@ -290,6 +363,12 @@ class AccountPage extends StatelessWidget {
                 subtitle: Text(user.isMinor ? 'Not available for accounts under 18.' : 'Songs marked explicit can play.'),
                 value: s.explicitAllowed,
                 onChanged: user.isMinor ? null : (v) => _change(context, () => auth.updateSettings(explicitAllowed: v)),
+              ),
+              ListTile(
+                leading: const Icon(Icons.download_rounded),
+                title: const Text('Download my data'),
+                subtitle: const Text('Copies everything linked to your account: your profile, picks, follows, likes and plays.'),
+                onTap: () => _downloadData(context),
               ),
               if (onResetRecommendations != null)
                 ListTile(

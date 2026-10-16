@@ -31,10 +31,10 @@ const idParam = z.object({ id: z.uuid() });
 
 const MAX_COVER_BYTES = 5 * 1024 * 1024;
 
-class TooLarge extends Error {}
+export class TooLarge extends Error {}
 
 /** Passes a stream through, failing once more than [max] bytes have gone by. */
-function limited(source: Readable, max: number): Readable {
+export function limited(source: Readable, max: number): Readable {
   let seen = 0;
   let over = false;
   const counter = new Transform({
@@ -55,14 +55,14 @@ function limited(source: Readable, max: number): Readable {
   return source.pipe(counter);
 }
 
-function sniffImage(head: Buffer): string | null {
+export function sniffImage(head: Buffer): string | null {
   if (head.length >= 3 && head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) return 'image/jpeg';
   if (head.length >= 8 && head.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
   if (head.length >= 12 && head.subarray(0, 4).toString('latin1') === 'RIFF' && head.subarray(8, 12).toString('latin1') === 'WEBP') return 'image/webp';
   return null;
 }
 
-async function firstBytes(ctx: Ctx, key: string, n: number): Promise<Buffer> {
+export async function firstBytes(ctx: Ctx, key: string, n: number): Promise<Buffer> {
   const { stream } = await ctx.storage.open(key, { start: 0, end: n - 1 });
   const chunks: Buffer[] = [];
   for await (const c of stream) chunks.push(c as Buffer);

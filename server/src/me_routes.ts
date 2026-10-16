@@ -17,6 +17,7 @@ const settingsPatch = z.object({
   hideActivity: z.boolean().optional(),
   shareListening: z.boolean().optional(),
   personalization: z.boolean().optional(),
+  shareCountry: z.boolean().optional(),
 });
 const tag = z.string().trim().toLowerCase().min(1).max(40);
 const tasteBody = z.object({
@@ -78,9 +79,9 @@ export function registerMeRoutes(ctx: Ctx) {
     await db.query(
       `update users set explicit_allowed = coalesce($2, explicit_allowed), private_session = coalesce($3, private_session),
               hide_activity = coalesce($4, hide_activity), share_listening = coalesce($5, share_listening),
-              personalization = coalesce($6, personalization)
+              personalization = coalesce($6, personalization), share_country = coalesce($7, share_country)
        where id = $1`,
-      [req.userId, p.explicitAllowed ?? null, p.privateSession ?? null, p.hideActivity ?? null, p.shareListening ?? null, p.personalization ?? null],
+      [req.userId, p.explicitAllowed ?? null, p.privateSession ?? null, p.hideActivity ?? null, p.shareListening ?? null, p.personalization ?? null, p.shareCountry ?? null],
     );
     return loadMe(req.userId!);
   });
@@ -128,7 +129,13 @@ export function registerMeRoutes(ctx: Ctx) {
     if (row.password_hash && (!parsed.data.password || !(await verifyPassword(parsed.data.password, row.password_hash)))) {
       return reply.code(403).send({ error: 'password_required' });
     }
+    // The rows go with the account; so must the files (songs, covers, the photo), or they would be left behind for good.
+    const files = [
+      ...(await db.query<{ k: string | null }>('select photo_key as k from users where id = $1', [req.userId])).rows,
+      ...(await db.query<{ k: string | null }>('select unnest(array[audio_key, stream_key, cover_key]) as k from tracks where artist_id = $1', [req.userId])).rows,
+    ];
     await db.query('delete from users where id = $1', [req.userId]);
+    for (const f of files) if (f.k) await ctx.storage.delete(f.k).catch(() => {});
     return reply.code(204).send();
   });
 

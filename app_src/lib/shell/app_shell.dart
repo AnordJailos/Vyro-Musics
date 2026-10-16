@@ -115,16 +115,16 @@ class _AppShellState extends State<AppShell> {
   StatsRepository get _stats => _auth.isSignedIn ? widget.stats : _demoStats;
 
   void _openAccount() {
-    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AccountPage(auth: _auth, admin: widget.admin, playback: widget.playback, onClearHistory: widget.history.clearHistory, onResetRecommendations: widget.catalog.resetRecommendations)));
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => AccountPage(auth: _auth, admin: widget.admin, playback: widget.playback, onClearHistory: widget.history.clearHistory, onResetRecommendations: widget.catalog.resetRecommendations, picker: widget.picker)));
   }
 
   Widget _page(_Tab tab) {
     final user = _auth.user;
     switch (tab.label) {
       case 'Home':
-        return HomePage(controller: widget.playback, catalog: widget.catalog);
+        return HomePage(controller: widget.playback, catalog: widget.catalog, history: widget.history, country: _auth.user?.country);
       case 'Search':
-        return SearchPage(catalog: widget.catalog, library: widget.library, playback: widget.playback);
+        return SearchPage(catalog: widget.catalog, library: widget.library, playback: widget.playback, country: _auth.user?.country);
       case 'Studio':
         return StudioPage(studio: widget.studio, picker: widget.picker);
       case 'Releases':

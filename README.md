@@ -138,6 +138,98 @@ Nothing goes live unchecked. When an artist submits a song ("Submit for release"
   ACRCloud or Audible Magic behind the same interface); and anyone can send a notice, so decide how rights holders are
   verified before you rely on it.
 
+## Progress checklist
+
+`docs/progress.md` is the checking document. It starts with a readiness report (where things stand, what works today,
+what is not ready and why, known risks, a plain-word state for each module), then lists every requirement, module by
+module, with its own status and a plain-language note. The report text lives in `docs/status.json` under `meta.report`. It is
+generated, so edit `docs/status.json` (one entry per requirement that has any progress) and then run:
+
+```bash
+node tools/progress.mjs                          # rewrites docs/progress.md
+node tools/progress.mjs --module AUTH            # prints just one module, to show or paste
+node tools/progress.mjs --module AUTH,ART --out accounts.md
+node tools/progress.mjs --only done,built        # only what is finished or written
+```
+
+The script stops if `status.json` names a requirement or status that does not exist, so the checklist cannot drift
+away from `docs/requirements.md`.
+
+## Profile and privacy
+
+- **Profile** (Account screen): name, username, **photo**, **country** and **language**. A listener's photo is private to them;
+  an artist's photo is part of their public page. Pictures up to 5 MB (JPEG, PNG or WebP). The language choice is saved,
+  but Vyro is not translated yet.
+- **Privacy controls**: *Private session* (plays are not kept in your history and are not linked to you), *Personalized
+  recommendations*, and *Share my country with artists* (off: your plays still count for the artist, without a country).
+  *Show my listening on my profile* and *Hide my activity from friends* are saved but apply to nothing yet, because there
+  are no friends or public listener profiles.
+- **Download my data** copies everything linked to your account to the clipboard as readable text: profile and settings,
+  taste picks, follows, liked songs, "not interested" choices and the plays linked to you (plays from a private session were
+  never linked). Artists also get a list of their songs. It is limited to 5 requests an hour.
+- **Deleting an account** removes the rows and the files (songs, covers, photo). Plays that artists already count stay as
+  anonymous numbers.
+
+## Finding music
+
+- **Search** finds songs and artists on Vyro even with typos and missing accents ("nova wve" finds Nova Wave), plus songs on
+  your device. With one or two letters typed it suggests names instead. Searches you submit or use are remembered
+  (Recent searches, with remove and clear).
+- **Browse by genre** and **Charts** (top songs, top artists, rising artists; worldwide or your own country) are on the
+  Search screen when nothing is typed. Charts also has a button on Home.
+- **Artist pages**: popular songs, all songs, about and links, similar artists, and Follow. Open one from search, the charts,
+  similar artists, or by tapping the artist's name under any song.
+- **Continue listening** on Home lists what you played lately (songs on your device only while the file is still there).
+- Songs have only a genre so far, so browsing by mood, activity, decade and language is not possible yet. Vyro has no albums,
+  so there are no album pages or albums chart.
+
+## Recommendations
+
+For someone with little or no listening history yet, **Home** shows, above "New on Vyro":
+
+- **Picked for you**: songs from the artists and genres chosen in the taste picker (a picked artist counts more than a genre,
+  then the most played), with at most three songs per artist. Left out for guests and when personalization is paused.
+- **Popular in your country**: the most played songs there in the last 28 days (only real plays count). When a country has
+  fewer than five songs with plays, it shows **Popular on Vyro** instead.
+- **Lists chosen by Vyro's staff**: see below.
+
+Every row has "Not interested" and "Don't suggest this artist" in its menu, and **Account, Reset recommendations** forgets
+those choices and the taste picks. Explicit songs, unpublished songs and suspended artists are left out everywhere.
+
+Staff (moderators and admins) manage the lists through the server for now:
+
+```bash
+# create (use "published": false to keep it as a draft); "trackIds" are song ids, in the order to show them
+curl -X POST http://localhost:3000/v1/admin/editorial -H "Authorization: Bearer STAFF_TOKEN" -H "Content-Type: application/json" \
+  -d '{"title":"Late night","description":"For after dark","trackIds":["SONG_ID"],"published":true,"position":1}'
+curl http://localhost:3000/v1/admin/editorial -H "Authorization: Bearer STAFF_TOKEN"            # all lists
+curl -X PUT http://localhost:3000/v1/admin/editorial/LIST_ID ...  # same body; replaces the songs
+curl -X DELETE http://localhost:3000/v1/admin/editorial/LIST_ID -H "Authorization: Bearer STAFF_TOKEN"
+```
+
+## Your library
+
+- **Browse** by songs, albums, artists, genres and folders (tap a genre or folder to open it). **Library settings** (the sliders
+  button) shows the folders being looked at, lets you **leave a folder out** (for example voice notes) and include it
+  again, and sets how short a song can be and still be kept: keep everything, 10 or 30 seconds, 1 or 2 minutes.
+- **Likes**: a heart on every song (songs on your device, songs on Vyro, and the Now Playing screen). The **Liked** tab shows
+  all of them together with a Vyro or Local badge. Likes of Vyro songs are saved on the server for signed-in people, so
+  they follow you to another device; made while signed out or offline, they wait and are sent later.
+- **Delete from device**: in a song's menu, after a confirmation. The file is deleted for good, and the song leaves the
+  library, the queue and every playlist. If the file cannot be deleted (in use, or protected by the system), the song stays.
+
+## Playlists
+
+- Make playlists in the **Playlists** tab of the Library, with a name, a description and a cover picture. They are kept on
+  this device (syncing across devices needs the server and is not built yet).
+- Add a song from the **...** menu on any song row (Home, Search, Library) or the playlist button on Now Playing. The sheet
+  can also start a new playlist. A song already in the playlist is noticed, with "Add anyway".
+- Playlists can mix songs from your own files and from Vyro, each with a badge. A playlist plays like any queue (Play,
+  Shuffle, or tap a song).
+- In a playlist: drag to reorder, long-press to select several songs (remove, add to the queue, add to another playlist),
+  sort by title, artist, date added or length, and remove duplicates.
+- Not built: saving albums and mixtapes (needs albums on Vyro), YouTube links, public or shared playlists.
+
 ## Playing music
 
 - **Shuffle** plays the queue in a random order, starting with the song that is playing; switching it off puts the original

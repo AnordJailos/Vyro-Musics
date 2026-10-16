@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart';
+
+import '../studio/studio_models.dart' show PickedFile;
 
 import 'api_client.dart';
 import 'api_errors.dart';
@@ -181,14 +184,32 @@ class AuthController extends ChangeNotifier {
   Future<void> updateProfile({String? displayName, String? username, String? country, String? language}) =>
       _update(api.updateProfile(displayName: displayName, username: username, country: country, language: language));
 
-  Future<void> updateSettings({bool? explicitAllowed, bool? privateSession, bool? hideActivity, bool? shareListening, bool? personalization}) =>
+  Future<void> updateSettings({bool? explicitAllowed, bool? privateSession, bool? hideActivity, bool? shareListening, bool? personalization, bool? shareCountry}) =>
       _update(api.updateSettings(
         explicitAllowed: explicitAllowed,
         privateSession: privateSession,
         hideActivity: hideActivity,
         shareListening: shareListening,
         personalization: personalization,
+        shareCountry: shareCountry,
       ));
+
+  Future<void> uploadPhoto(PickedFile file) => _update(api.uploadPhoto(file));
+
+  Future<void> removePhoto() async {
+    await api.removePhoto();
+    await _update(api.me());
+  }
+
+  /// Everything Vyro holds about the person, as readable text.
+  Future<String> exportData() => api.exportData();
+
+  /// The profile photo as a picture, or null when there is none.
+  ImageProvider? get photoImage {
+    final path = _user?.photoUrl;
+    final uri = path == null ? null : api.photoUri(path);
+    return uri == null ? null : NetworkImage(uri.toString(), headers: api.imageHeaders);
+  }
 
   Future<List<SuggestedArtist>> suggestedArtists() => api.suggestedArtists();
 

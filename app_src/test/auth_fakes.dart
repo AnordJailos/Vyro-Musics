@@ -1,4 +1,5 @@
 import 'package:vyro_music/auth/api_errors.dart';
+import 'package:vyro_music/studio/studio_models.dart';
 import 'package:vyro_music/auth/auth_api.dart';
 import 'package:vyro_music/auth/auth_controller.dart';
 import 'package:vyro_music/auth/auth_models.dart';
@@ -79,9 +80,33 @@ class FakeAuthApi implements AuthApi {
   @override
   Future<void> resendParentConsent() async => _go('resendParentConsent', null);
   @override
-  Future<UserProfile> updateProfile({String? displayName, String? username, String? country, String? language}) async => _go('updateProfile', user);
+  Future<UserProfile> updateProfile({String? displayName, String? username, String? country, String? language}) async {
+    user = user.copyWith(language: language, country: country);
+    return _go('updateProfile', user);
+  }
+
   @override
-  Future<UserProfile> updateSettings({bool? explicitAllowed, bool? privateSession, bool? hideActivity, bool? shareListening, bool? personalization}) async {
+  Future<UserProfile> uploadPhoto(PickedFile file) async {
+    user = user.copyWith(photoUrl: '/v1/users/${user.id}/photo?v=1');
+    return _go('uploadPhoto', user);
+  }
+
+  @override
+  Future<void> removePhoto() async {
+    user = user.copyWith(removePhoto: true);
+    _go('removePhoto', null);
+  }
+
+  @override
+  Future<String> exportData() async => _go('exportData', '{"fake": true}');
+
+  @override
+  Uri? photoUri(String photoUrl) => null; // tests never fetch pictures from the network
+
+  @override
+  Map<String, String> get imageHeaders => const {};
+  @override
+  Future<UserProfile> updateSettings({bool? explicitAllowed, bool? privateSession, bool? hideActivity, bool? shareListening, bool? personalization, bool? shareCountry}) async {
     user = UserProfile(
       id: user.id,
       displayName: user.displayName,
@@ -90,7 +115,10 @@ class FakeAuthApi implements AuthApi {
       emailVerified: user.emailVerified,
       tasteSet: user.tasteSet,
       artist: user.artist,
-      settings: UserSettings(privateSession: privateSession ?? user.settings.privateSession, shareListening: shareListening ?? user.settings.shareListening),
+      settings: UserSettings(privateSession: privateSession ?? user.settings.privateSession, shareListening: shareListening ?? user.settings.shareListening, shareCountry: shareCountry ?? user.settings.shareCountry),
+      language: user.language,
+      country: user.country,
+      photoUrl: user.photoUrl,
     );
     return _go('updateSettings', user);
   }

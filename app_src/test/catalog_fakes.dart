@@ -34,6 +34,18 @@ class FakeCatalogApi implements CatalogApi {
   final dismissed = <String>[];
   int resets = 0;
   List<CatalogTrack> saved = [];
+  List<ArtistSummary> artists = [];
+  List<Suggestion> suggestions = [];
+  List<GenreCount> genreCounts = [];
+  final genreSongs = <String, List<CatalogTrack>>{};
+  final pages = <String, ArtistPageData>{};
+  List<ArtistChartEntry> chartTop = [];
+  List<ArtistChartEntry> chartRising = [];
+  final suggestQueries = <String>[];
+  final chartRequests = <String>[];
+  final follows = <String>[];
+  Object? followFailure;
+  Object? pageFailure;
   final saveCalls = <String>[];
   Object? saveFailure;
   Object? lyricsFailure;
@@ -48,7 +60,10 @@ class FakeCatalogApi implements CatalogApi {
   Future<List<CatalogTrack>> newReleases() async => _go(fresh);
 
   @override
-  Future<List<CatalogTrack>> charts({String range = '7d', String? country}) async => _go(top);
+  Future<List<CatalogTrack>> charts({String range = '7d', String? country}) async {
+    chartRequests.add('songs:${country ?? 'world'}');
+    return _go(top);
+  }
 
   @override
   Future<List<CatalogTrack>> search(String query) async {
@@ -96,6 +111,54 @@ class FakeCatalogApi implements CatalogApi {
     if (e != null) throw e;
     saveCalls.add('save:$trackId');
     if (!saved.any((t) => t.id == trackId)) saved.insert(0, catalogTrack(trackId, 'Song $trackId'));
+  }
+
+  @override
+  Future<SearchResults> searchAll(String query) async => SearchResults(
+        artists: [for (final a in artists) if (a.stageName.toLowerCase().contains(query.toLowerCase())) a],
+        tracks: await search(query),
+      );
+
+  @override
+  Future<List<Suggestion>> suggest(String query) async {
+    suggestQueries.add(query);
+    return [for (final s in suggestions) if (s.text.toLowerCase().contains(query.toLowerCase())) s];
+  }
+
+  @override
+  Future<List<GenreCount>> genres() async => genreCounts;
+
+  @override
+  Future<List<CatalogTrack>> genreTracks(String genre, {String sort = 'new'}) async {
+    chartRequests.add('genre:$genre:$sort');
+    return genreSongs[genre] ?? const [];
+  }
+
+  @override
+  Future<ArtistPageData> artistPage(String artistId) async {
+    final e = pageFailure;
+    if (e != null) throw e;
+    return pages[artistId] ?? (throw const ApiException(404, 'not_found'));
+  }
+
+  @override
+  Future<List<ArtistChartEntry>> artistChart({String kind = 'top', String? country}) async {
+    chartRequests.add('artists:$kind:${country ?? 'world'}');
+    return kind == 'rising' ? chartRising : chartTop;
+  }
+
+  @override
+  Future<void> followArtist(String artistId) async {
+    final e = followFailure;
+    if (e != null) throw e;
+    follows.add('follow:$artistId');
+  }
+
+  @override
+  Future<void> unfollowArtist(String artistId) async {
+    final e = followFailure;
+    if (e != null) throw e;
+    follows.add('unfollow:$artistId');
   }
 
   @override

@@ -5,6 +5,7 @@ class UserSettings {
     this.hideActivity = false,
     this.shareListening = true,
     this.personalization = true,
+    this.shareCountry = true,
   });
 
   final bool explicitAllowed;
@@ -13,12 +14,16 @@ class UserSettings {
   final bool shareListening;
   final bool personalization;
 
+  /// Whether artists can see which country this listener is in (their plays count either way).
+  final bool shareCountry;
+
   factory UserSettings.fromJson(Map<String, Object?> j) => UserSettings(
         explicitAllowed: j['explicitAllowed'] != false,
         privateSession: j['privateSession'] == true,
         hideActivity: j['hideActivity'] == true,
         shareListening: j['shareListening'] != false,
         personalization: j['personalization'] != false,
+        shareCountry: j['shareCountry'] != false,
       );
 
   Map<String, Object?> toJson() => {
@@ -27,6 +32,7 @@ class UserSettings {
         'hideActivity': hideActivity,
         'shareListening': shareListening,
         'personalization': personalization,
+        'shareCountry': shareCountry,
       };
 }
 
@@ -70,6 +76,7 @@ class UserProfile {
     this.tasteSet = false,
     this.artist,
     this.role = 'user',
+    this.photoUrl,
   });
 
   final String id;
@@ -90,6 +97,29 @@ class UserProfile {
 
   /// user, moderator or admin.
   final String role;
+
+  /// Where the profile photo is (a path on the server), or null.
+  final String? photoUrl;
+
+  UserProfile copyWith({String? language, String? country, UserSettings? settings, String? photoUrl, bool removePhoto = false}) => UserProfile(
+        id: id,
+        displayName: displayName,
+        username: username,
+        email: email,
+        phone: phone,
+        country: country ?? this.country,
+        language: language ?? this.language,
+        emailVerified: emailVerified,
+        phoneVerified: phoneVerified,
+        hasPassword: hasPassword,
+        isMinor: isMinor,
+        parentConsent: parentConsent,
+        settings: settings ?? this.settings,
+        tasteSet: tasteSet,
+        artist: artist,
+        role: role,
+        photoUrl: removePhoto ? null : (photoUrl ?? this.photoUrl),
+      );
 
   bool get isArtist => artist != null;
   bool get isStaff => role == 'moderator' || role == 'admin';
@@ -118,6 +148,7 @@ class UserProfile {
       tasteSet: j['tasteSet'] == true,
       artist: artist == null ? null : ArtistInfo.fromJson(artist.cast<String, Object?>()),
       role: (j['role'] as String?) ?? 'user',
+      photoUrl: j['photoUrl'] as String?,
     );
   }
 
@@ -138,6 +169,7 @@ class UserProfile {
         'tasteSet': tasteSet,
         'artist': artist?.toJson(),
         'role': role,
+        'photoUrl': photoUrl,
       };
 }
 

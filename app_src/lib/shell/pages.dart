@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../audio/track.dart';
+import '../catalog/artist_page.dart';
+import '../catalog/charts_page.dart';
+import '../history/history_store.dart';
+import '../history/recent_tracks.dart';
+
 import '../audio/demo_tracks.dart';
 import '../audio/playback_controller.dart';
 import '../brand/vyro_mark.dart';
@@ -10,10 +16,16 @@ import '../theme/theme_controller.dart';
 import '../theme/vyro_theme.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.controller, required this.catalog});
+  const HomePage({super.key, required this.controller, required this.catalog, this.history, this.country});
 
   final PlaybackController controller;
   final CatalogApi catalog;
+
+  /// Where plays are kept, for "Continue listening".
+  final HistoryStore? history;
+
+  /// The person's country, for the charts.
+  final String? country;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -23,10 +35,47 @@ class _HomePageState extends State<HomePage> {
   late Future<List<CatalogTrack>> _fresh = widget.catalog.newReleases();
   late Future<List<CatalogTrack>> _top = widget.catalog.charts();
   late Future<List<RecSection>> _recs = _loadRecs();
+  late Future<List<Track>> _recent = _loadRecent();
   final Set<String> _hiddenTracks = {};
   final Set<String> _hiddenArtists = {};
 
   // Suggestions are a bonus: if they cannot be loaded, the rest of Home still works.
+  Future<List<Track>> _loadRecent() async {
+    final h = widget.history;
+    if (h == null) return const [];
+    try {
+      return await recentTracks(await h.loadAll(), streamUri: widget.catalog.streamUri);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Widget _continueListening() {
+    final text = Theme.of(context).textTheme;
+    return FutureBuilder<List<Track>>(
+      future: _recent,
+      builder: (context, snap) {
+        final list = snap.data ?? const <Track>[];
+        if (list.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 20),
+            Text('Continue listening', style: text.titleMedium),
+            for (var i = 0; i < list.length; i++)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.history_rounded),
+                title: Text(list[i].title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                subtitle: Row(children: [SourceBadge(list[i].source == TrackSource.vyro ? 'Vyro' : 'Local'), const SizedBox(width: 6), Expanded(child: Text(list[i].artist, maxLines: 1, overflow: TextOverflow.ellipsis))]),
+                onTap: () => widget.controller.setQueue(list, startIndex: i, origin: 'direct'),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<List<RecSection>> _loadRecs() => widget.catalog.recommendations().catchError((_) => <RecSection>[]);
 
   Future<void> _refresh() async {
@@ -34,6 +83,7 @@ class _HomePageState extends State<HomePage> {
       _fresh = widget.catalog.newReleases();
       _top = widget.catalog.charts();
       _recs = _loadRecs();
+      _recent = _loadRecent();
       _hiddenTracks.clear();
       _hiddenArtists.clear();
     });
@@ -75,6 +125,7 @@ class _HomePageState extends State<HomePage> {
                   track: shown[i],
                   catalog: widget.catalog,
                   playback: widget.controller,
+                  onArtistTap: () => openArtist(context, artistId: shown[i].artistId, catalog: widget.catalog, playback: widget.controller),
                   onTap: () => _play(shown, i, origin),
                   onNotInterested: () => _dismiss(shown[i], artist: false),
                   onHideArtist: () => _dismiss(shown[i], artist: true),
@@ -109,7 +160,7 @@ class _HomePageState extends State<HomePage> {
             return Column(
               children: [
                 for (var i = 0; i < shown.length; i++)
-                  CatalogTrackTile(track: shown[i], catalog: widget.catalog, playback: widget.controller, onTap: () => _play(shown, i, origin)),
+                  CatalogTrackTile(track: shown[i], catalog: widget.catalog, playback: widget.controller, onArtistTap: () => openArtist(context, artistId: shown[i].artistId, catalog: widget.catalog, playback: widget.controller), onTap: () => _play(shown, i, origin)),
               ],
             );
           },
@@ -135,6 +186,14 @@ class _HomePageState extends State<HomePage> {
           Center(
             child: Text('PRESS PLAY. KEEP THE FLOW.', style: text.labelMedium?.copyWith(letterSpacing: 3, color: VyroColors.mist)),
           ),
+          Center(
+            child: TextButton.icon(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ChartsPage(catalog: widget.catalog, playback: widget.controller, country: widget.country))),
+              icon: const Icon(Icons.leaderboard_rounded),
+              label: const Text('Charts'),
+            ),
+          ),
+          _continueListening(),
           _recommendations(),
           _section('New on Vyro', _fresh, 'Songs from artists will appear here as they join Vyro.', 'direct'),
           _section('Top this week', _top, 'The most played songs will appear here.', 'chart'),

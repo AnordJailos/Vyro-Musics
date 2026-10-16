@@ -14,8 +14,10 @@ import { registerTakedownRoutes } from './takedown_routes.js';
 import type { Ctx } from './context.js';
 import type { Db } from './db.js';
 import { makeSocialVerifier, type SocialVerifier } from './idtokens.js';
+import { registerDiscoveryRoutes } from './discovery_routes.js';
 import { registerLyricsRoutes } from './lyrics_routes.js';
 import { registerMeRoutes } from './me_routes.js';
+import { registerProfileRoutes } from './profile_routes.js';
 import { registerRecommendationRoutes } from './recommendations_routes.js';
 import { ConsoleMessenger, type Messenger } from './messaging.js';
 import { hashPassword, newRefreshToken, sha256, tokenKit } from './security.js';
@@ -83,7 +85,8 @@ export async function buildApp(deps: AppDeps) {
         `select id, email, phone, display_name, username, country, language, created_at, role,
                 to_char(birth_date, 'YYYY-MM-DD') as birth_date,
                 email_verified_at, phone_verified_at, explicit_allowed, parent_consent,
-                private_session, hide_activity, share_listening, personalization,
+                private_session, hide_activity, share_listening, personalization, share_country,
+                (extract(epoch from photo_updated_at) * 1000)::bigint as photo_version,
                 (password_hash is not null) as has_password,
                 exists (select 1 from taste_profiles t where t.user_id = users.id) as taste_set
          from users where id = $1`,
@@ -116,7 +119,9 @@ export async function buildApp(deps: AppDeps) {
         hideActivity: u.hide_activity,
         shareListening: u.share_listening,
         personalization: u.personalization,
+        shareCountry: u.share_country,
       },
+      photoUrl: u.photo_version == null ? null : `/v1/users/${u.id}/photo?v=${u.photo_version}`,
       tasteSet: u.taste_set,
       artist: a
         ? { stageName: a.stage_name, bio: a.bio, artistType: a.artist_type, verified: a.verified, genres: a.genres, links: a.links }
@@ -176,6 +181,8 @@ export async function buildApp(deps: AppDeps) {
   registerStudioRoutes(ctx);
   registerLyricsRoutes(ctx);
   registerRecommendationRoutes(ctx);
+  registerDiscoveryRoutes(ctx);
+  registerProfileRoutes(ctx);
   registerAdminRoutes(ctx);
   registerTakedownRoutes(ctx);
   registerCatalogRoutes(ctx);

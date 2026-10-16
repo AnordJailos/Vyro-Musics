@@ -19,6 +19,7 @@ import 'auth/screens/auth_gate.dart';
 import 'auth/social_sign_in.dart';
 import 'auth/token_store.dart';
 import 'audio/playback_store.dart';
+import 'catalog/recent_searches.dart';
 import 'library/likes_controller.dart';
 import 'library/likes_scope.dart';
 import 'library/likes_store.dart';
@@ -121,6 +122,8 @@ Future<void> main() async {
   await playlists.load();
   final likes = LikesController(library: library, store: FileLikesStore(), catalog: catalog, canSync: () => auth.isSignedIn && !auth.isOffline, attach: attach);
   await likes.load();
+  final recents = RecentSearches(store: FileRecentSearchStore());
+  await recents.load();
   auth.addListener(() {
     if (auth.isSignedIn) unawaited(likes.sync()); // sends likes made before signing in, and fetches the ones made elsewhere
   });
@@ -142,6 +145,7 @@ Future<void> main() async {
     embeddedLyrics: readEmbeddedLyrics,
     playlists: playlists,
     likes: likes,
+    recentSearches: recents,
   ));
 }
 
@@ -161,6 +165,7 @@ class VyroApp extends StatefulWidget {
     this.embeddedLyrics,
     PlaylistsController? playlists,
     this.likes,
+    this.recentSearches,
   })  : stats = stats ?? DemoStatsRepository(),
         library = library ?? LibraryController(store: MemoryLibraryStore(), scanner: LibraryScanner(readTags: _noTags)),
         history = history ?? MemoryHistoryStore(),
@@ -185,6 +190,9 @@ class VyroApp extends StatefulWidget {
   /// Likes for songs on the device and on Vyro. Made from the library when not given.
   final LikesController? likes;
 
+  /// Recent searches. Kept in memory when not given.
+  final RecentSearches? recentSearches;
+
   @override
   State<VyroApp> createState() => _VyroAppState();
 }
@@ -193,6 +201,7 @@ Future<List<TagInfo?>> _noTags(List<String> paths) async => const [];
 
 class _VyroAppState extends State<VyroApp> {
   final _theme = ThemeController();
+  late final RecentSearches _recents = widget.recentSearches ?? RecentSearches(store: MemoryRecentSearchStore());
   late final LikesController _likes = widget.likes ?? LikesController(library: widget.library, store: MemoryLikesStore(), catalog: widget.catalog);
 
   @override
@@ -204,7 +213,9 @@ class _VyroAppState extends State<VyroApp> {
 
   @override
   Widget build(BuildContext context) {
-    return LikesScope(
+    return RecentSearchesScope(
+      controller: _recents,
+      child: LikesScope(
       controller: _likes,
       child: PlaylistsScope(
       controller: widget.playlists,
@@ -235,6 +246,7 @@ class _VyroAppState extends State<VyroApp> {
           ),
         ),
       ),
+    ),
     ),
     ),
     );

@@ -5,26 +5,187 @@
       "Run ./setup.sh on your machine and report what flutter analyze and flutter test say. Until then, every Built item is unconfirmed (there is a lot of it now).",
       "Try the player on a real phone: audio focus for calls (PLY-05) and the lock-screen controls can only be confirmed there.",
       "Before opening to the public: connect an email and SMS provider, set ADMIN_EMAILS, choose a copyright lookup service you may use commercially, have a lawyer review the notice process, and decide how lyrics will be reviewed.",
-      "Next module: Playlists (PLS), which builds on the new queue.",
-      "Offline downloads, with encrypted storage and a download queue."
-    ]
+      "Offline downloads, with encrypted storage and a download queue.",
+      "A screen in the Admin console for staff to build the editorial lists (today they use the server directly).",
+      "Next module: offline downloads (OFF), or the remaining launch-level gaps in other modules (for example the profile photo and language picker in AUTH-06, or YouTube search in SRC)."
+    ],
+    "report": {
+      "where": [
+        "Vyro Music is a working prototype, not a finished product. The server (accounts, uploads, streaming, review and copyright checks, statistics, recommendations, lyrics) is built and has been run: its 166 automated checks pass, including checks with real audio files. The app (listening and mixing, library, playlists, queue, lyrics, the artist Studio and the admin console) is written, with automated checks of its own, but none of it has been run yet on a phone or a computer.",
+        "So \"Built\" in this document means written and ready to be tested, not proven. The first real milestone is to run the setup script and the app's checks on your machine and fix what they find.",
+        "Nothing can be opened to the public yet. What stands in the way is listed below: outside services to connect, legal documents, store accounts and hosting, and the launch-level features that are still missing.",
+        "Launch-level features still missing: YouTube search and playback, album pages and albums (Vyro has none yet), browsing by mood, activity, decade and language, sharing and deep links, blocking and reporting users, accessibility, translations and an onboarding tour, resumable uploads and release types, claiming an artist profile, and almost all of the operations work (environments, monitoring, backups, beta, support, store listings)."
+      ],
+      "working": [
+        {
+          "area": "Accounts",
+          "text": "Sign up and log in with email (with confirmation) or a phone code, Google and Apple sign-in on the server side, guest mode, age rules with parent consent, password reset, a saved login, a profile with photo, country and language, privacy controls (private session, sharing your country with artists, personalization), a download of your data, and account deletion that removes every file."
+        },
+        {
+          "area": "Artists and uploads",
+          "text": "Upgrade a listener account to an artist account, upload songs (MP3, M4A, FLAC, WAV, OGG, AIFF, up to 300 MB), cover art, loudness measured at upload, and submit a song for release."
+        },
+        {
+          "area": "Review and safety",
+          "text": "Copies of songs already on Vyro are caught by audio fingerprint, a reviewer queue with approve, reject and bulk actions, copyright notices with counter-notices, automatic suspension after three upheld notices, roles (listener, moderator, admin) and an audit log."
+        },
+        {
+          "area": "Streaming",
+          "text": "Songs stream from short-lived secure links and can be played from any point. Explicit songs are hidden from guests and from anyone who turned them off."
+        },
+        {
+          "area": "The player",
+          "text": "Normal and Mixing modes with crossfades, shuffle and repeat, a queue (play next, reorder, remove, history), swipe gestures, picking up where you left off after the app was closed, a buffering spinner with automatic retries, and lock-screen controls."
+        },
+        {
+          "area": "Library",
+          "text": "Scan folders on the device, read tags, browse by songs, albums, artists, genres and folders, leave folders out, ignore short clips, like any song (on the device or on Vyro, saved on the server for signed-in people), and delete a song from the device."
+        },
+        {
+          "area": "Playlists",
+          "text": "Create and edit playlists with a cover picture, mix songs from your own files and from Vyro, drag to reorder, sort, select several songs, and remove duplicates."
+        },
+        {
+          "area": "Lyrics",
+          "text": "Artists add synced or plain lyrics in the Studio. Listeners see the current line highlighted. Songs on the device use a .lrc file next to them or lyrics stored inside. Listeners can report wrong lyrics."
+        },
+        {
+          "area": "Discovery",
+          "text": "Home shows Continue listening, picks from the taste picker, what is popular in your country, and lists chosen by staff, with \"Not interested\" and a reset. Search finds songs and artists even with typos, with suggestions, recent searches and browsing by genre. Artist pages (with follow) and charts of songs, artists and rising artists."
+        },
+        {
+          "area": "Statistics",
+          "text": "An artist dashboard (plays, listeners, audience split, per-song listening, countries) and a listener profile, both filled by real plays recorded by the app."
+        },
+        {
+          "area": "Admin console",
+          "text": "For reviewers: the review queue, copyright notices, and artist management (verify, suspend, restore)."
+        }
+      ],
+      "blockers": [
+        {
+          "what": "An SMS service",
+          "why": "Phone sign-in codes only print on the server's screen until a provider is connected.",
+          "affects": [
+            "AUTH-01"
+          ]
+        },
+        {
+          "what": "An email service",
+          "why": "Confirmation, password reset and parent-consent emails also only print on the server's screen.",
+          "affects": [
+            "AUTH-02",
+            "AUTH-07",
+            "AUTH-09"
+          ]
+        },
+        {
+          "what": "Google and Apple developer accounts",
+          "why": "The sign-in buttons say \"not set up\" until client IDs and the sign-in plugins are added.",
+          "affects": [
+            "AUTH-03"
+          ]
+        },
+        {
+          "what": "A copyright lookup service you may use commercially",
+          "why": "Matching against music released elsewhere is connected but switched off. The free AcoustID service is for non-commercial use only; a commercial app needs an agreement with them or a paid service.",
+          "affects": [
+            "STU-07",
+            "BKE-06",
+            "SAF-02"
+          ]
+        },
+        {
+          "what": "Legal review",
+          "why": "The terms, privacy policy and artist agreement are placeholders. The age limits, the copyright notice wording and time limits, music licensing and royalty reporting, and the \"Vyro Music\" name all need a lawyer for each launch market.",
+          "affects": [
+            "ART-06",
+            "AUTH-09",
+            "SAF-01",
+            "SAF-02",
+            "SAF-08",
+            "SAF-09"
+          ]
+        },
+        {
+          "what": "Apple and Google store accounts, and push services",
+          "why": "Store policy checks, store listings, and push notifications cannot start without them.",
+          "affects": [
+            "SAF-10",
+            "OPS-05",
+            "BKE-09"
+          ]
+        },
+        {
+          "what": "Hosting and operations",
+          "why": "The server keeps files on its own disk and has no deployment set-up, monitoring, backups or content delivery network yet.",
+          "affects": [
+            "BKE-03",
+            "BKE-10",
+            "BKE-11",
+            "BKE-12"
+          ]
+        },
+        {
+          "what": "Real phones for testing",
+          "why": "Audio focus for calls, lock-screen controls, folder access and background audio on Android and iOS, and the speed and size targets, can only be confirmed on devices.",
+          "affects": [
+            "PLY-02",
+            "PLY-05",
+            "LIB-01",
+            "DEV-03",
+            "NFR-01",
+            "NFR-02",
+            "NFR-06"
+          ]
+        },
+        {
+          "what": "A YouTube policy review",
+          "why": "YouTube search and playback are not started, and the requirements demand a compliance review before every release.",
+          "affects": [
+            "SRC-04",
+            "SRC-09"
+          ]
+        },
+        {
+          "what": "Real artists and testers",
+          "why": "The seed catalog and the closed beta need people, not code.",
+          "affects": [
+            "OPS-01",
+            "OPS-02"
+          ]
+        }
+      ],
+      "unverified": "The app's automated checks are written for every feature but have never been run, because the build tools for the app (Flutter) are not available where this was developed. Expect some compile errors and a few failing checks on the first run; they are normally quick to fix. Until then, treat every Built item that involves the app as unconfirmed. The server side is different: it has been run, and its checks pass.",
+      "risks": [
+        "Nobody reviews lyrics. An artist could add lyrics they do not own, and reports from listeners reach the artist, not a moderator.",
+        "Anyone can send a copyright notice, and the song goes offline at once. Decide how rights holders are verified before relying on this.",
+        "Every uploaded song waits for a reviewer by default, so moderators are needed before artists start uploading.",
+        "Playlists, the queue and the listening history are kept on the device only. They are not saved to the server, so they are lost with the phone.",
+        "A country with listening on fewer than five songs shows the whole-of-Vyro popular list instead of its own.",
+        "On newer Android versions the system may refuse to delete music files that are outside the app's own folder.",
+        "Crashes, speed, install size and availability are not measured anywhere yet, so none of the performance targets is confirmed.",
+        "Accessibility, translations and the onboarding tour are launch requirements and are not started.",
+        "The artist age limit of 18 is a cautious default that needs legal confirmation in each market."
+      ]
+    }
   },
   "items": {
     "AUTH-02": {
       "status": "built",
-      "note": "Sign-up, log in and email confirmation work on the server (tested) and the screens are built. Emails are only printed to the server console until an email provider is connected."
+      "note": "Sign-up, log-in and email confirmation work and the screens are built. Confirmation emails are not actually sent yet: an email service still needs to be connected."
     },
     "AUTH-06": {
-      "status": "partial",
-      "note": "Name, username, country and language are stored; name and username can be edited. Photo and a language picker are missing."
+      "status": "built",
+      "note": "Name, photo, username, country and language. A listener's photo is private to them; an artist's photo is part of their public page. The language picker saves the choice, but Vyro is not translated yet."
     },
     "AUTH-08": {
       "status": "built",
-      "note": "Needs the typed word plus the password (server tested, dialog built)."
+      "note": "Deleting an account needs the typed word DELETE and the password. Plays already counted for artists are kept, without the person's name. Every file goes too: songs, covers and the profile photo."
     },
     "AUTH-11": {
       "status": "built",
-      "note": "The sign-up checkbox sends the terms version and the server stores it with the time (tested). The legal text itself is a placeholder."
+      "note": "The sign-up checkbox records which version of the terms was accepted, and when. The legal text itself is a placeholder."
     },
     "AUTH-12": {
       "status": "partial",
@@ -32,7 +193,7 @@
     },
     "ART-01": {
       "status": "built",
-      "note": "Upgrade endpoint (tested) and the Become an artist screen (built)."
+      "note": "Upgrading a listener account to an artist account works, and the \"Become an artist\" screen is built."
     },
     "ART-02": {
       "status": "built",
@@ -48,7 +209,7 @@
     },
     "ART-05": {
       "status": "built",
-      "note": "A tick box on the upgrade screen; the server stores the declaration with the time (tested)."
+      "note": "A tick box on the upgrade screen; the declaration is stored with the time it was made."
     },
     "ART-06": {
       "status": "partial",
@@ -56,7 +217,7 @@
     },
     "ART-08": {
       "status": "partial",
-      "note": "Look-alike names (letter case, spaces, punctuation, accents) are blocked (tested). A reporting flow is missing."
+      "note": "Look-alike names (letter case, spaces, punctuation, accents) are blocked. A reporting flow is missing."
     },
     "ART-09": {
       "status": "partial",
@@ -64,7 +225,7 @@
     },
     "ART-11": {
       "status": "built",
-      "note": "Moderators can mark an artist verified, and verified artists can skip review under the \"new artists\" policy (server tested, screen built)."
+      "note": "Moderators can mark an artist verified, and verified artists can skip review under the \"new artists\" policy."
     },
     "STU-03": {
       "status": "partial",
@@ -83,16 +244,16 @@
       "note": "Tags are read. Cover art is not."
     },
     "LIB-04": {
-      "status": "partial",
-      "note": "Songs, Albums and Artists views. Genres and folders are missing."
+      "status": "built",
+      "note": "Browse by songs, albums, artists, genres and folders. Genres and folders open to their songs, which play from there."
     },
     "LIB-05": {
-      "status": "partial",
-      "note": "Folders can be added and removed, and clips under 30 seconds are skipped. Excluding a folder has no screen yet."
+      "status": "built",
+      "note": "Leave a folder out (its songs go at once and stay out when the device is scanned again) and include it again; choose how short a song can be and still be kept (keep everything, 10 seconds, 30 seconds, 1 or 2 minutes). Both are in Library settings."
     },
     "LIB-07": {
-      "status": "partial",
-      "note": "Hearts and a Liked tab for songs on this device. Online songs are not covered yet."
+      "status": "built",
+      "note": "A heart on every song: songs on the device, Vyro songs, and the Now Playing screen. Vyro likes are saved on the server for signed-in people, so they follow them to another device, and wait on the device until the connection or the sign-in is there."
     },
     "LIB-16": {
       "status": "built",
@@ -104,7 +265,7 @@
     },
     "SRC-06": {
       "status": "partial",
-      "note": "The mix engine never blends YouTube or license-restricted tracks (tests written). YouTube playback itself is not built."
+      "note": "The mix engine never blends YouTube or license-restricted tracks. YouTube playback itself is not built."
     },
     "PLY-01": {
       "status": "built",
@@ -116,7 +277,7 @@
     },
     "PLY-03": {
       "status": "built",
-      "note": "A queue screen with play next, add, reorder, remove, clear and a history list. Song rows have a menu for Play next and Add to queue."
+      "note": "A queue screen with play next, add, reorder, remove, clear and a history list. Song rows have a menu for \"Play next\" and \"Add to queue\"."
     },
     "PLY-04": {
       "status": "built",
@@ -144,7 +305,7 @@
     },
     "MIX-08": {
       "status": "built",
-      "note": "Songs marked not mixable, and YouTube songs, change with a clean cut (tests written)."
+      "note": "Songs marked not mixable, and YouTube songs, change with a clean cut."
     },
     "MIX-21": {
       "status": "built",
@@ -160,15 +321,15 @@
     },
     "DSC-01": {
       "status": "partial",
-      "note": "Songs and artist names on Vyro, plus local files. Albums, playlists and users are missing."
+      "note": "Songs and artists on Vyro, found even with typos and missing accents, plus songs on the device. Albums, playlists and users cannot be searched yet, because Vyro has no public albums, playlists or user pages."
     },
     "REC-02": {
       "status": "built",
-      "note": "Plays are recorded on the device and Vyro plays are sent in batches when signed in; private sessions and personalization are respected (server tested, app code and tests written, not run yet)."
+      "note": "Plays are recorded on the device, and plays of Vyro songs are sent to the server when signed in. Private sessions and personalization settings are respected."
     },
     "SOC-04": {
       "status": "partial",
-      "note": "Server follow and unfollow for artists (tested). No app screen."
+      "note": "Follow and unfollow from the artist page. A list of the artists you follow is missing."
     },
     "UIX-01": {
       "status": "built",
@@ -184,7 +345,7 @@
     },
     "STA-01": {
       "status": "partial",
-      "note": "Plays, listeners, followers and saves with date ranges, now filled by real plays once the app sends them (server tested, screen reads live data). Playlist adds are missing."
+      "note": "Plays, listeners, followers and saves with date ranges, filled by real plays once the app sends them. Saves now include the likes made in the app. Playlist adds are missing."
     },
     "STA-02": {
       "status": "partial",
@@ -196,11 +357,11 @@
     },
     "STA-04": {
       "status": "built",
-      "note": "Search, recommendations, playlists, charts, shares, library and direct (server tested, screen reads live data when signed in)."
+      "note": "Search, recommendations, playlists, charts, shares, library and direct."
     },
     "STA-07": {
       "status": "built",
-      "note": "Which songs yours are blended with (server tested, screen reads live data when signed in)."
+      "note": "Which songs yours are blended with."
     },
     "STA-08": {
       "status": "built",
@@ -208,27 +369,27 @@
     },
     "STA-10": {
       "status": "done",
-      "note": "Groups with fewer than 5 listeners are folded into Other (tested)."
+      "note": "Groups with fewer than 5 listeners are folded into \"Other\" to protect privacy."
     },
     "STA-11": {
       "status": "partial",
-      "note": "The 30-second stream rule is built and tested. Fraud filtering is missing."
+      "note": "The 30-second rule for counting a stream is built. Fraud filtering is missing."
     },
     "STA-14": {
       "status": "partial",
-      "note": "Server numbers for monthly listeners and followers (tested). No artist page screen."
+      "note": "Monthly listeners and follower numbers exist on the server. There is no artist page screen yet."
     },
     "STA-16": {
       "status": "built",
-      "note": "Every headline number shows its change against the period before (server tested, screen reads live data when signed in)."
+      "note": "Every headline number shows its change against the period before."
     },
     "STA-17": {
       "status": "built",
-      "note": "Retention curve per song (server tested, screen reads live data when signed in)."
+      "note": "Retention curve per song."
     },
     "STA-18": {
       "status": "built",
-      "note": "New, returning and super listeners (server tested, screen reads live data when signed in)."
+      "note": "New, returning and super listeners."
     },
     "STA-19": {
       "status": "built",
@@ -244,27 +405,27 @@
     },
     "PRF-02": {
       "status": "built",
-      "note": "4 weeks, 6 months, this year, all time (server tested, screen reads live data when signed in)."
+      "note": "4 weeks, 6 months, this year, all time."
     },
     "PRF-03": {
       "status": "built",
-      "note": "Minutes listened with hours (server tested, screen reads live data when signed in)."
+      "note": "Minutes listened with hours."
     },
     "PRF-04": {
       "status": "built",
-      "note": "Listening streak in the listener's own time zone (server tested, screen reads live data when signed in)."
+      "note": "Listening streak in the listener's own time zone."
     },
     "PRF-05": {
       "status": "built",
-      "note": "Top artists, songs and genres (server tested, screen reads live data when signed in)."
+      "note": "Top artists, songs and genres."
     },
     "PRF-06": {
       "status": "built",
-      "note": "Listening clock and personality (server tested, screen reads live data when signed in)."
+      "note": "Listening clock and personality."
     },
     "PRF-07": {
       "status": "built",
-      "note": "Songs blended and new artists found (server tested, screen reads live data when signed in)."
+      "note": "Songs blended and new artists found."
     },
     "PRF-08": {
       "status": "partial",
@@ -276,19 +437,19 @@
     },
     "BKE-01": {
       "status": "partial",
-      "note": "Versioned /v1 API. Rate limits on sign-in only."
+      "note": "A versioned API. Rate limits exist for sign-in only."
     },
     "BKE-02": {
       "status": "partial",
-      "note": "PostgreSQL holds users, artists, songs, follows, saves and plays. Playlists and a separate analytics store are missing."
+      "note": "A database holds users, artists, songs, follows, saves and plays. Playlists and a separate analytics store are missing."
     },
     "BKE-13": {
       "status": "partial",
-      "note": "A flags table and a read endpoint. No admin screen to change them."
+      "note": "A table of feature switches and a way to read them. There is no admin screen to change them."
     },
     "BKE-15": {
       "status": "partial",
-      "note": "Plays are stored straight into the database. No queue or stream yet."
+      "note": "Plays are stored straight into the database. There is no queue or stream pipeline yet."
     },
     "QUA-03": {
       "status": "partial",
@@ -296,7 +457,7 @@
     },
     "DEV-01": {
       "status": "partial",
-      "note": "One shared Flutter codebase. A custom native audio engine is not built."
+      "note": "One shared codebase for every platform. A custom native audio engine is not built."
     },
     "DEV-02": {
       "status": "built",
@@ -308,15 +469,15 @@
     },
     "DEV-12": {
       "status": "built",
-      "note": "setup.sh builds Android, iOS, Windows and macOS from one codebase."
+      "note": "One setup script builds Android, iOS, Windows and macOS from one codebase."
     },
     "SAF-05": {
-      "status": "partial",
-      "note": "Account deletion works and anonymizes plays (tested). Data export is missing."
+      "status": "built",
+      "note": "Deleting an account removes everything, files included; plays stay as anonymous counts. \"Download my data\" copies a full export (profile, picks, follows, likes, \"not interested\" choices and the plays linked to the person). The wording and retention periods need a lawyer."
     },
     "SAF-06": {
       "status": "partial",
-      "note": "Passwords are hashed with scrypt. Encryption in transit comes with deployment."
+      "note": "Passwords are stored securely hashed. Encryption in transit comes with deployment."
     },
     "SAF-12": {
       "status": "partial",
@@ -324,15 +485,15 @@
     },
     "NFR-10": {
       "status": "partial",
-      "note": "The server has 118 passing tests (with real audio and both fingerprint tools), the platform script 6 and the progress script 4. The Flutter tests are written but not run yet."
+      "note": "The server has 166 automated checks, all passing. The app's checks are written but have not been run yet."
     },
     "AUTH-01": {
       "status": "partial",
-      "note": "Phone sign-in works on the server (tested) and the screens are built. Codes are only printed to the server console until an SMS provider is connected."
+      "note": "Phone sign-in works and the screens are built. Codes are not actually sent yet: an SMS service still needs to be connected."
     },
     "AUTH-03": {
       "status": "partial",
-      "note": "The server checks Google and Apple tokens (tested with test keys). The buttons say \"not set up\" until your Google and Apple client IDs and the sign-in plugins are added."
+      "note": "Google and Apple sign-in are checked by the server. The buttons say \"not set up\" until your Google and Apple developer accounts are connected."
     },
     "AUTH-04": {
       "status": "built",
@@ -340,39 +501,39 @@
     },
     "AUTH-05": {
       "status": "built",
-      "note": "Genres, moods and artists, skippable (saved on the server, tested). \"At least three artists\" is not enforced because the catalog is still empty."
+      "note": "Genres, moods and artists, skippable. \"At least three artists\" is not enforced because the catalog is still empty."
     },
     "AUTH-07": {
       "status": "built",
-      "note": "Reset with an emailed code; signs out every device (server tested, screens built)."
+      "note": "Reset with an emailed code; signs out every device."
     },
     "AUTH-09": {
       "status": "built",
-      "note": "Date of birth at sign-up. Under 13 refused, 13 to 15 need a parent's emailed code, explicit content locked off under 18 (server tested, screens built). Ages need legal review per market."
+      "note": "Date of birth at sign-up. Under 13 refused, 13 to 15 need a parent's emailed code, explicit content locked off under 18. Ages need legal review per market."
     },
     "AUTH-10": {
       "status": "partial",
-      "note": "Private session keeps a play out of the history on the device and unlinks it on the server (tested). \"Hide activity\" does nothing yet because there is no activity feed."
+      "note": "Private session, \"Share my country with artists\" (off means plays count without a country), personalized recommendations, and a download of your data are real controls. \"Hide my activity\" and \"Show my listening on my profile\" are saved but apply to nothing yet, because friends and public profiles do not exist."
     },
     "AUTH-15": {
       "status": "done",
-      "note": "Codes expire after 10 minutes, lock after 5 wrong tries, 5 per hour (tested)."
+      "note": "Codes expire after 10 minutes, lock after 5 wrong tries, and are limited to 5 per hour."
     },
     "AUTH-16": {
       "status": "done",
-      "note": "30-day sessions that rotate; a password reset signs out every device (tested)."
+      "note": "Logins last 30 days and renew themselves. Resetting a password signs the person out of every device."
     },
     "AUTH-17": {
       "status": "built",
-      "note": "Login kept in secure storage with a memory fallback; offline start shows the last saved profile (tests written, not run)."
+      "note": "The login is kept in the device's secure storage. With no connection, the app opens with the last saved profile."
     },
     "AUTH-18": {
       "status": "built",
-      "note": "Verified-email rule and account linking (tested with test keys; not yet tried against real Google or Apple)."
+      "note": "Accounts are only linked when the email address is verified. Not yet tried with real Google or Apple accounts."
     },
     "STU-01": {
       "status": "built",
-      "note": "The server accepts MP3, M4A, FLAC, WAV, OGG and AIFF (tested with real files); the Studio screen picks and uploads them."
+      "note": "Uploads accept MP3, M4A, FLAC, WAV, OGG and AIFF files, and the Studio screen picks and uploads them."
     },
     "STU-04": {
       "status": "partial",
@@ -380,11 +541,11 @@
     },
     "STU-06": {
       "status": "partial",
-      "note": "Length, bitrate and sample-rate checks (tested with real files). Clipping, silence and fake-upsample checks are missing."
+      "note": "Length, bitrate and sample-rate checks. Clipping, silence and fake-upsample checks are missing."
     },
     "STU-08": {
       "status": "partial",
-      "note": "Draft, submit for release, withdraw and delete work (tested). Scheduling is missing."
+      "note": "Draft, submit for release, withdraw and delete work. Scheduling is missing."
     },
     "STU-09": {
       "status": "partial",
@@ -396,15 +557,15 @@
     },
     "STU-19": {
       "status": "done",
-      "note": "Deleting a song removes its files and keeps its plays (tested)."
+      "note": "Deleting a song removes its files and keeps its plays in the artist's statistics."
     },
     "STU-20": {
       "status": "built",
-      "note": "300 MB limit checked before sending and by the server, and a failed upload is retried on the same song (server tested, screen built)."
+      "note": "The 300 MB limit is checked before sending and by the server, and a failed upload is retried on the same song."
     },
     "SRC-01": {
       "status": "partial",
-      "note": "Songs stream from short-lived signed addresses with byte ranges (tested). Adaptive quality is missing."
+      "note": "Songs stream from short-lived secure links and can be played from any point. Adaptive quality is missing."
     },
     "SRC-02": {
       "status": "partial",
@@ -415,28 +576,28 @@
       "note": "One search across Vyro and the music on the device, grouped by source. YouTube is not part of it yet."
     },
     "DSC-04": {
-      "status": "partial",
-      "note": "New on Vyro and Top this week. Continue listening and picks for you are missing."
+      "status": "built",
+      "note": "Home shows Continue listening (what you played lately), Picked for you, New on Vyro and Top this week, with a Charts button."
     },
     "DSC-05": {
       "status": "partial",
-      "note": "Weekly top songs (worldwide on screen, per country in the server). Albums and artists charts are missing."
+      "note": "Top songs, top artists and rising artists, worldwide or for your own country. An albums chart is missing, because Vyro has no albums yet."
     },
     "DSC-08": {
       "status": "done",
-      "note": "Explicit songs are hidden from guests and from anyone with explicit content off, in search, new, charts and streaming (tested)."
+      "note": "Explicit songs are hidden from guests and from anyone with explicit content turned off, in search, new releases, charts and streaming."
     },
     "BKE-03": {
       "status": "partial",
-      "note": "Files are stored behind a storage layer on local disk. S3-style storage and a CDN are missing."
+      "note": "Files are stored on the server's disk behind a storage layer. Cloud storage and a content delivery network are missing."
     },
     "BKE-04": {
       "status": "partial",
-      "note": "Lossless uploads get a smaller AAC streaming copy when ffmpeg is installed. Multiple bitrates and HLS are missing."
+      "note": "Lossless uploads get a smaller streaming copy (needs the ffmpeg tool installed on the server). Several bitrates and adaptive streaming are missing."
     },
     "BKE-05": {
       "status": "done",
-      "note": "Loudness is measured at upload with ffmpeg (EBU R128) and stored (tested; needs ffmpeg on the server)."
+      "note": "Loudness is measured when a song is uploaded and stored (needs the ffmpeg tool installed on the server)."
     },
     "BKE-07": {
       "status": "partial",
@@ -444,7 +605,7 @@
     },
     "BKE-08": {
       "status": "done",
-      "note": "Signed, expiring stream addresses; tampered or expired ones are refused (tested)."
+      "note": "Stream links are signed and expire; altered or expired links are refused."
     },
     "QUA-02": {
       "status": "partial",
@@ -460,35 +621,35 @@
     },
     "STU-07": {
       "status": "built",
-      "note": "Songs that sound like ones already on Vyro are put on hold, including re-encoded and trimmed copies (tested with real audio). The lookup against released music is wired in but only tested with a stand-in; it needs an AcoustID key or a paid service."
+      "note": "Songs that sound like ones already on Vyro are put on hold, including re-encoded or trimmed copies. Checking against music released elsewhere is connected, but needs a licensed lookup service to go live."
     },
     "BKE-06": {
       "status": "partial",
-      "note": "Fingerprint matching against the catalog works (tested with fpcalc and with ffmpeg). Matching against released music needs a lookup service."
+      "note": "Copies of songs already on Vyro are detected by audio fingerprint, even re-encoded ones. Matching against music released elsewhere needs a licensed lookup service."
     },
     "ADM-01": {
       "status": "partial",
-      "note": "Roles (user, moderator, admin) and an audit log are tested on the server, and the Admin console is built. The audit log has no screen yet."
+      "note": "Roles (listener, moderator, admin) and a record of every decision exist, and the Admin console is built. The record has no screen yet."
     },
     "ADM-02": {
       "status": "built",
-      "note": "Approve or reject with a reason the artist is told, one at a time or in bulk (server tested, screens built)."
+      "note": "Approve or reject with a reason the artist is told, one at a time or in bulk."
     },
     "ADM-03": {
       "status": "partial",
-      "note": "Search artists, verify, suspend and restore (server tested, screen built). Merging duplicate accounts is missing."
+      "note": "Search artists, verify, suspend and restore. Merging duplicate accounts is missing."
     },
     "ADM-12": {
       "status": "built",
-      "note": "Reviewers listen to a song before deciding, through a private streaming link (server tested, screen built)."
+      "note": "Reviewers can listen to a song before deciding, through a private link."
     },
     "ADM-13": {
       "status": "done",
-      "note": "Review policy: every song, only new artists, or none; unchecked audio never skips review (tested)."
+      "note": "Review policy: every song, only new artists, or none. Audio that could not be checked never skips review."
     },
     "SAF-02": {
       "status": "built",
-      "note": "Notices take a song offline at once, artists can counter, reviewers uphold or restore (server tested, screens built). The legal wording and time limits need a lawyer."
+      "note": "A copyright notice takes a song offline at once; the artist can answer with a counter-notice; a reviewer upholds or restores it. The legal wording and time limits need a lawyer."
     },
     "SAF-03": {
       "status": "partial",
@@ -500,35 +661,35 @@
     },
     "SAF-16": {
       "status": "done",
-      "note": "Three upheld copyright notices suspend the artist automatically (tested)."
+      "note": "Three upheld copyright notices suspend the artist automatically."
     },
     "SAF-17": {
       "status": "done",
-      "note": "A suspended account is signed out everywhere, cannot sign in, and its songs are hidden (tested)."
+      "note": "A suspended account is signed out everywhere, cannot sign in, and its songs are hidden."
     },
     "STU-21": {
       "status": "done",
-      "note": "New audio takes a live song offline until it is reviewed again (tested)."
+      "note": "New audio takes a live song offline until it is reviewed again."
     },
     "REC-18": {
       "status": "built",
-      "note": "Real listening time per song, including blends (tests written)."
+      "note": "Real listening time per song, including blends."
     },
     "REC-19": {
       "status": "built",
-      "note": "Offline and guest plays wait in an outbox; every play has its own id; bad data cannot block the rest (tests written)."
+      "note": "Plays made offline or as a guest wait on the device and are sent later. No play is counted twice, and bad data cannot block the rest."
     },
     "PRF-11": {
       "status": "built",
-      "note": "Profile combines Vyro listening from the server with music played from the device, streak included (tests written). YouTube plays are not part of it yet."
+      "note": "Profile combines Vyro listening from the server with music played from the device, streak included. YouTube plays are not part of it yet."
     },
     "PRF-12": {
       "status": "built",
-      "note": "Clear listening history on the Account screen (test written)."
+      "note": "Clear listening history on the Account screen."
     },
     "LYR-01": {
       "status": "built",
-      "note": "The line being sung is highlighted and scrolled into view (tests written, not run yet)."
+      "note": "The line being sung is highlighted and scrolled into view."
     },
     "LYR-02": {
       "status": "partial",
@@ -540,11 +701,11 @@
     },
     "LYR-04": {
       "status": "built",
-      "note": "Songs on the device use a .lrc or .txt file with the same name, or lyrics stored inside the file."
+      "note": "Songs on the device use a.lrc or.txt file with the same name, or lyrics stored inside the file."
     },
     "LYR-05": {
       "status": "built",
-      "note": "Artists add, edit and remove lyrics in the Studio (server tested; screens and tests written)."
+      "note": "Artists add, edit and remove lyrics in the Studio."
     },
     "LYR-06": {
       "status": "partial",
@@ -552,15 +713,15 @@
     },
     "LYR-07": {
       "status": "built",
-      "note": "Listeners report wrong words, timing, offensive or copied lyrics; the artist is told once per person (server tested)."
+      "note": "Listeners report wrong words, timing, offensive or copied lyrics; the artist is told once per person."
     },
     "LYR-15": {
       "status": "done",
-      "note": "Lyrics of explicit songs follow the explicit setting, for guests and minors too (server tested)."
+      "note": "Lyrics of explicit songs follow the explicit setting, for guests and minors too."
     },
     "STU-10": {
       "status": "partial",
-      "note": "Artists can write, paste or import .lrc lyrics. There is no tap-to-time editor yet."
+      "note": "Artists can write, paste or import.lrc lyrics. There is no tap-to-time editor yet."
     },
     "PLY-07": {
       "status": "built",
@@ -569,6 +730,46 @@
     "PLY-08": {
       "status": "partial",
       "note": "A buffering spinner and automatic retries (after 1, 2 and 4 seconds, from where the song stopped) are built. Dropping to a lower quality needs several versions of each song, which do not exist yet."
+    },
+    "PLS-01": {
+      "status": "built",
+      "note": "Create, rename, describe and delete playlists, with a cover picture. Playlists are kept on this device."
+    },
+    "PLS-02": {
+      "status": "partial",
+      "note": "Songs from your own files and from Vyro can be added from any song row or from Now Playing, each shown with a \"Vyro\" or \"Local\" badge. YouTube links are not built yet."
+    },
+    "PLS-03": {
+      "status": "built",
+      "note": "Drag to reorder, select several songs (remove, add to the queue, add to another playlist), sort by title, artist, date added or length, and remove duplicates."
+    },
+    "REC-01": {
+      "status": "built",
+      "note": "Home shows \"Picked for you\" (from the genres and artists chosen in the taste picker), \"Popular in your country\" (or on all of Vyro when a country has too little listening), and lists chosen by Vyro's staff. The moods from the picker are not used yet, because songs have no mood. Staff create the lists through the server for now; there is no screen for it."
+    },
+    "REC-09": {
+      "status": "built",
+      "note": "Pause personalization (this turns off \"Picked for you\"), reset recommendations, clear listening history, and \"Not interested\" for a song or a whole artist."
+    },
+    "LIB-06": {
+      "status": "partial",
+      "note": "The Liked tab brings songs from the device and from Vyro together, each with a \"Local\" or \"Vyro\" badge, and playlists mix both. The Songs, Albums, Artists, Genres and Folders views still show only songs on the device."
+    },
+    "LIB-08": {
+      "status": "built",
+      "note": "\"Delete from device\" in a song's menu, after a confirmation. The song also leaves the queue and every playlist, and if it was playing, playback moves on first. If the file cannot be deleted, the song stays and the person is told. On newer Android versions the system may refuse to delete files outside the app's own folder; that case needs platform code."
+    },
+    "DSC-02": {
+      "status": "built",
+      "note": "Suggestions for the first one or two letters, search that forgives typos and accents (\"nova wve\" finds Nova Wave), and recent searches that can be reused, removed or cleared."
+    },
+    "DSC-03": {
+      "status": "partial",
+      "note": "Browse by genre, from the Search screen. Mood, activity, decade and language are missing, because songs do not carry those details yet."
+    },
+    "DSC-06": {
+      "status": "built",
+      "note": "An artist page with popular songs, all their songs, about, links, similar artists and a follow button. Photo and banner are missing. Reached from search, charts, similar artists and the artist name under any song."
     }
   }
 }

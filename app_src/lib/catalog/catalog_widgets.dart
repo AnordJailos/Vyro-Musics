@@ -30,7 +30,7 @@ String mmss(int ms) {
 }
 
 class CatalogTrackTile extends StatelessWidget {
-  const CatalogTrackTile({super.key, required this.track, required this.catalog, required this.onTap, this.playback, this.onNotInterested, this.onHideArtist});
+  const CatalogTrackTile({super.key, required this.track, required this.catalog, required this.onTap, this.playback, this.onNotInterested, this.onHideArtist, this.onArtistTap});
 
   final CatalogTrack track;
   final CatalogApi catalog;
@@ -42,6 +42,9 @@ class CatalogTrackTile extends StatelessWidget {
   /// Only on suggestions: "Not interested" in this song, or in this artist.
   final VoidCallback? onNotInterested;
   final VoidCallback? onHideArtist;
+
+  /// Makes the artist's name open their page.
+  final VoidCallback? onArtistTap;
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +65,9 @@ class CatalogTrackTile extends StatelessWidget {
         ),
       ),
       title: Text(track.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text('${track.explicit ? 'E · ' : ''}${track.artistName}', maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: onArtistTap == null
+          ? Text('${track.explicit ? 'E · ' : ''}${track.artistName}', maxLines: 1, overflow: TextOverflow.ellipsis)
+          : InkWell(onTap: onArtistTap, child: Text('${track.explicit ? 'E · ' : ''}${track.artistName}', maxLines: 1, overflow: TextOverflow.ellipsis)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

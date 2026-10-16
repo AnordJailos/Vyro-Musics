@@ -54,8 +54,9 @@ export function registerStatsRoutes({ app, db, requireUser, now, minCohort }: De
   app.post('/v1/events/listens', userOnly, async (req, reply) => {
     const parsed = listensBody.safeParse(req.body);
     if (!parsed.success) return invalid(reply, parsed.error);
-    const me = (await db.query<{ country: string | null; private_session: boolean; personalization: boolean }>('select country, private_session, personalization from users where id = $1', [req.userId])).rows[0];
-    const country = me?.country ?? null;
+    const me = (await db.query<{ country: string | null; private_session: boolean; personalization: boolean; share_country: boolean }>('select country, private_session, personalization, share_country from users where id = $1', [req.userId])).rows[0];
+    // Someone who does not share their country still counts as a listener, just without a country.
+    const country = me?.share_country === false ? null : (me?.country ?? null);
     // A private session, or personalization turned off: the play still counts for the artist, but is not linked to the listener.
     const listenerId = me && (me.private_session || !me.personalization) ? null : req.userId;
     const latest = now().getTime() + 5 * 60_000;

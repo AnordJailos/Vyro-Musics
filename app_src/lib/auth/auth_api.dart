@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import '../studio/studio_api.dart' show imageContentType;
+import '../studio/studio_models.dart' show PickedFile;
 import 'api_client.dart';
 import 'api_errors.dart';
 import 'auth_models.dart';
@@ -20,11 +24,22 @@ abstract class AuthApi {
   Future<UserProfile> confirmParentConsent(String code);
   Future<void> resendParentConsent();
   Future<UserProfile> updateProfile({String? displayName, String? username, String? country, String? language});
-  Future<UserProfile> updateSettings({bool? explicitAllowed, bool? privateSession, bool? hideActivity, bool? shareListening, bool? personalization});
+  Future<UserProfile> updateSettings({bool? explicitAllowed, bool? privateSession, bool? hideActivity, bool? shareListening, bool? personalization, bool? shareCountry});
   Future<List<SuggestedArtist>> suggestedArtists();
   Future<UserProfile> saveTaste({List<String> genres = const [], List<String> moods = const [], List<String> artistIds = const []});
   Future<UserProfile> becomeArtist(ArtistRequest request);
   Future<void> deleteAccount({String? password});
+
+  /// Sets the profile photo (a picture under 5 MB).
+  Future<UserProfile> uploadPhoto(PickedFile file);
+  Future<void> removePhoto();
+
+  /// Everything Vyro holds about the person, as readable JSON text.
+  Future<String> exportData();
+
+  /// The full address of a photo path, and the headers to fetch it with (a listener's own photo is private).
+  Uri? photoUri(String photoUrl);
+  Map<String, String> get imageHeaders;
 }
 
 Map<String, Object?> _map(Object? json) => (json as Map).cast<String, Object?>();
@@ -123,14 +138,38 @@ class HttpAuthApi implements AuthApi {
       }));
 
   @override
-  Future<UserProfile> updateSettings({bool? explicitAllowed, bool? privateSession, bool? hideActivity, bool? shareListening, bool? personalization}) =>
+  Future<UserProfile> updateSettings({bool? explicitAllowed, bool? privateSession, bool? hideActivity, bool? shareListening, bool? personalization, bool? shareCountry}) =>
       _profile(_client.send('PATCH', '/v1/me/settings', body: {
         if (explicitAllowed != null) 'explicitAllowed': explicitAllowed,
         if (privateSession != null) 'privateSession': privateSession,
         if (hideActivity != null) 'hideActivity': hideActivity,
         if (shareListening != null) 'shareListening': shareListening,
         if (personalization != null) 'personalization': personalization,
+        if (shareCountry != null) 'shareCountry': shareCountry,
       }));
+
+  @override
+  Future<UserProfile> uploadPhoto(PickedFile file) async {
+    if (file.length > 5 * 1024 * 1024) throw const ApiException(413, 'file_too_large');
+    return _profile(_client.upload('/v1/me/photo', open: file.open, length: file.length, contentType: imageContentType(file.name)));
+  }
+
+  @override
+  Future<void> removePhoto() async {
+    await _client.send('DELETE', '/v1/me/photo');
+  }
+
+  @override
+  Future<String> exportData() async => const JsonEncoder.withIndent('  ').convert(await _client.send('GET', '/v1/me/export'));
+
+  @override
+  Uri? photoUri(String photoUrl) => _client.baseUrl.resolve(photoUrl);
+
+  @override
+  Map<String, String> get imageHeaders {
+    final token = _client.session.accessToken;
+    return token == null ? const {} : {'authorization': 'Bearer $token'};
+  }
 
   @override
   Future<List<SuggestedArtist>> suggestedArtists() async {
@@ -162,6 +201,13 @@ class HttpAuthApi implements AuthApi {
 /// Used where no server is available (tests, previews): every call fails as "no connection".
 class OfflineAuthApi implements AuthApi {
   const OfflineAuthApi();
+
+  // Pictures need nothing from the network to be described, so these answer plainly instead of failing.
+  @override
+  Uri? photoUri(String photoUrl) => null;
+
+  @override
+  Map<String, String> get imageHeaders => const {};
 
   @override
   dynamic noSuchMethod(Invocation invocation) => Future<Never>.error(const ApiException(0, 'network'));

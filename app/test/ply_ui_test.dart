@@ -180,10 +180,10 @@ void main() {
       await start(tester, 'abcd');
       await tester.pumpWidget(host());
       // The list reports a move of the first song to the end as (0, 3): "to" counts the spot after removal.
-      tester.widget<ReorderableListView>(find.byType(ReorderableListView)).onReorder(0, 3);
+      tester.widget<ReorderableListView>(find.byType(ReorderableListView)).onReorder!(0, 3);
       await settle(tester);
       expect(order(c), 'acdb');
-      tester.widget<ReorderableListView>(find.byType(ReorderableListView)).onReorder(1, 0); // the second of the songs still to come, to the front of them
+      tester.widget<ReorderableListView>(find.byType(ReorderableListView)).onReorder!(1, 0); // the second of the songs still to come, to the front of them
       await settle(tester);
       expect(order(c), 'adcb');
     });

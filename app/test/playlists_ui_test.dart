@@ -129,7 +129,8 @@ void main() {
       await tall(tester);
       final p = await seed('abcd');
       await openPage(tester, p.id);
-      tester.widget<ReorderableListView>(find.byType(ReorderableListView)).onReorder(0, 3); // the list reports the place after removal
+      tester.widget<ReorderableListView>(find.byType(ReorderableListView)).onReorder!(0, 3);
+      // tester.widget<ReorderableListView>(find.byType(ReorderableListView)).onReorder(0, 3); // the list reports the place after removal
       await tester.pumpAndSettle();
       expect(order(c.byId(p.id)!), 'bcad');
     });

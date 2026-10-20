@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
-
+import 'package:flutter/material.dart' hide RepeatMode;
 import '../audio/playback_controller.dart';
 import '../brand/vyro_mark.dart';
 import '../lyrics/lyrics_provider.dart';
